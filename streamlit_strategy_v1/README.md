@@ -37,11 +37,25 @@ DESCRIBE STREAMLIT <db>.<schema>.<app>;
 
 | Path | `git_commit_hash` | Evidence of origin |
 |---|---|---|
-| `CREATE STREAMLIT FROM @git_repo/branches/main/` | populated | Commit hash on the app object |
-| DCM `DEFINE STREAMLIT FROM 'asset://…'` | empty | DCM project deployment history |
+| `CREATE STREAMLIT FROM @git_repo/branches/main/` | populated | Commit hash on the app object; per-version ledger in `SHOW VERSIONS IN STREAMLIT` |
+| DCM `DEFINE STREAMLIT FROM 'asset://…'` | empty | The `source_file_path` of the latest row in `SHOW DEPLOYMENTS IN DCM PROJECT` |
 | Built in Snowsight | empty | none |
 
 Both governed paths are acceptable. An app with neither is a side project, and that is the line where platform support stops.
+
+Two caveats that change how you deploy, both verified against 10.34.101 rather than
+taken from the documentation:
+
+- The `git_commit_hash` column of `SHOW DEPLOYMENTS IN DCM PROJECT` never
+  populates. Deploy DCM projects from `@repo/tags/<tag>/` or
+  `@repo/commits/<sha>/`, because the `FROM` path is the only Git evidence
+  retained; a `branches/` path records a moving pointer.
+- `CREATE STREAMLIT` and `ALTER STREAMLIT … ADD VERSION` accept **only**
+  `branches/` paths and reject `tags/` and `commits/`. So tag-pinned releases have
+  to go through DCM.
+
+See [`01_dev_workflow_overview.md`](01_dev_workflow_overview.md) for the full
+matrix.
 
 ---
 

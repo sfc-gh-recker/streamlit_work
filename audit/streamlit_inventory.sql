@@ -48,16 +48,32 @@
 -- Provenance and auditability are not the same thing, and that distinction
 -- drives one deployment rule:
 --
---   Deploy DCM projects FROM '@repo/commits/<sha>/', never '@repo/branches/<br>/'.
+--   Deploy DCM projects FROM '@repo/commits/<sha>/' or '@repo/tags/<tag>/',
+--   never '@repo/branches/<branch>/'.
 --
 -- A branch path records a moving pointer, so six months later nothing in the
 -- account can tell you which commit is actually running. A commit path embeds
--- the immutable sha in source_file_path, which the audit recovers into
--- DCM_SOURCE_SHA. IS_UNPINNED_SOURCE flags the governed-but-untraceable case.
+-- the immutable sha in source_file_path. A tag path names a release, which the
+-- audit resolves to a sha via SHOW GIT TAGS -- resolved live, because a tag can
+-- be force-moved and so is not itself an identifier. DCM_SOURCE_REF records
+-- which of the three was used; IS_UNPINNED_SOURCE flags the branch case.
 --
--- Note the asymmetry: CREATE STREAMLIT FROM resolves a *branch* path to a
--- concrete sha and pins it on the object at create time, so for path 1 a branch
--- path is safe. Do not generalize either behaviour to the other.
+-- THE MECHANISM INVERSION. The two ways to deploy a Streamlit accept DIFFERENT
+-- path forms, and they are opposites:
+--
+--   EXECUTE DCM PROJECT ... FROM     branches/ + commits/ + tags/  all accepted
+--   CREATE STREAMLIT ... FROM        branches/ ONLY
+--   ALTER STREAMLIT ADD VERSION FROM branches/ ONLY
+--
+-- Both Streamlit forms reject commits/ and tags/ with "Invalid git branch path",
+-- at any depth, despite ALTER STREAMLIT documenting
+-- FROM { <snowgit_tag_uri> | <snowgit_commit_uri> }. Auditability survives
+-- anyway: a branch path is resolved to a concrete sha and FROZEN onto the
+-- version at add time, which SHOW VERSIONS IN STREAMLIT then reports per version.
+--
+-- The practical consequence: if a release must be pinned to an immutable tag,
+-- that app has to go through DCM. Tag-pinned deployment is not reachable by
+-- CREATE STREAMLIT or ADD VERSION.
 --
 -- Run as a role that can see all databases (ACCOUNTADMIN or an audit role
 -- with IMPORTED PRIVILEGES / object discovery across the account).
@@ -95,6 +111,7 @@ CREATE TABLE IF NOT EXISTS GOVERNANCE.APPS.STREAMLIT_INVENTORY (
     GIT_BRANCH              VARCHAR,
     DCM_PROJECT             VARCHAR,   -- DCM project managing this app, if any
     DCM_SOURCE_PATH         VARCHAR,   -- latest deployment's FROM path
+    DCM_SOURCE_REF          VARCHAR,   -- COMMIT | TAG | BRANCH | NON_GIT
     DCM_SOURCE_SHA          VARCHAR,   -- commit recovered from that path, if pinned
     PROVENANCE              VARCHAR,   -- GIT_DIRECT | DCM_MANAGED | NONE
     COMMIT_SHA              VARCHAR,   -- effective commit from EITHER path
@@ -176,6 +193,9 @@ DECLARE
     v_proj          VARCHAR;
     v_dcm_src       VARCHAR;
     v_dcm_sha       VARCHAR;
+    v_dcm_ref       VARCHAR;
+    v_dcm_repo      VARCHAR;
+    v_dcm_tag       VARCHAR;
 BEGIN
     run_ts := CURRENT_TIMESTAMP();
 
@@ -220,7 +240,8 @@ BEGIN
         FULL_NAME       VARCHAR,
         DCM_PROJECT     VARCHAR,
         DCM_SOURCE_PATH VARCHAR,
-        DCM_SOURCE_SHA  VARCHAR
+        DCM_SOURCE_SHA  VARCHAR,
+        DCM_SOURCE_REF  VARCHAR
     );
 
     SHOW DCM PROJECTS IN ACCOUNT;
@@ -236,6 +257,7 @@ BEGIN
         v_proj    := p.project_fqn;
         v_dcm_src := NULL;
         v_dcm_sha := NULL;
+        v_dcm_ref := NULL;
 
         -- Latest deployment. SHOW DEPLOYMENTS returns newest first, so LIMIT 1
         -- is the current source of record. A project with no deployments yet
@@ -246,20 +268,45 @@ BEGIN
 
             SELECT "source_file_path",
                    REGEXP_SUBSTR("source_file_path",
-                                 '/commits/([0-9a-f]{40})/', 1, 1, 'e', 1)
-              INTO v_dcm_src, v_dcm_sha
+                                 '/commits/([0-9a-f]{40})/', 1, 1, 'e', 1),
+                   CASE
+                       WHEN "source_file_path" RLIKE '.*/commits/[0-9a-f]{40}/.*'
+                           THEN 'COMMIT'
+                       WHEN "source_file_path" LIKE '%/tags/%'     THEN 'TAG'
+                       WHEN "source_file_path" LIKE '%/branches/%' THEN 'BRANCH'
+                       ELSE 'NON_GIT'
+                   END
+              INTO v_dcm_src, v_dcm_sha, v_dcm_ref
               FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
         EXCEPTION
             WHEN OTHER THEN
                 NULL;
         END;
 
+        -- A tag path names an immutable release but does not carry the sha, so
+        -- resolve it. Tags CAN technically be force-moved, which is why this
+        -- resolves live rather than trusting the tag name as an identifier.
+        IF (v_dcm_ref = 'TAG' AND v_dcm_sha IS NULL) THEN
+            v_dcm_repo := REGEXP_SUBSTR(v_dcm_src, '^@([^/]+)/', 1, 1, 'e', 1);
+            v_dcm_tag  := REGEXP_SUBSTR(v_dcm_src, '/tags/([^/]+)/', 1, 1, 'e', 1);
+            BEGIN
+                EXECUTE IMMEDIATE 'SHOW GIT TAGS LIKE ''' || v_dcm_tag
+                                  || ''' IN ' || v_dcm_repo;
+                SELECT "commit_hash" INTO v_dcm_sha
+                  FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+            EXCEPTION
+                WHEN OTHER THEN
+                    NULL;
+            END;
+        END IF;
+
         BEGIN
             EXECUTE IMMEDIATE 'SHOW ENTITIES IN DCM PROJECT ' || v_proj;
 
             INSERT INTO GOVERNANCE.APPS._AUDIT_DCM_APPS
-                   (FULL_NAME, DCM_PROJECT, DCM_SOURCE_PATH, DCM_SOURCE_SHA)
-            SELECT "name", :v_proj, :v_dcm_src, :v_dcm_sha
+                   (FULL_NAME, DCM_PROJECT, DCM_SOURCE_PATH, DCM_SOURCE_SHA,
+                    DCM_SOURCE_REF)
+            SELECT "name", :v_proj, :v_dcm_src, :v_dcm_sha, :v_dcm_ref
             FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
             WHERE UPPER("object_type") = 'STREAMLIT';
         EXCEPTION
@@ -310,7 +357,8 @@ BEGIN
             TITLE, COMMENT_TEXT, OWNER_ROLE, OWNER_ROLE_TYPE, QUERY_WAREHOUSE,
             URL_ID, CREATED_ON,
             GIT_COMMIT_HASH, SOURCE_LOCATION_URI, GIT_BRANCH,
-            DCM_PROJECT, DCM_SOURCE_PATH, DCM_SOURCE_SHA, PROVENANCE, COMMIT_SHA,
+            DCM_PROJECT, DCM_SOURCE_PATH, DCM_SOURCE_REF, DCM_SOURCE_SHA,
+            PROVENANCE, COMMIT_SHA,
             SOURCE_MODEL, ROOT_LOCATION, RUNTIME, COMPUTE_POOL, RUNTIME_NAME,
             MAIN_FILE, USER_PACKAGES,
             IS_UNGOVERNED, IS_LEGACY_SOURCE, IS_ADMIN_OWNED, IS_UNNAMED,
@@ -336,6 +384,7 @@ BEGIN
 
             dcm.DCM_PROJECT,
             dcm.DCM_SOURCE_PATH,
+            dcm.DCM_SOURCE_REF,
             dcm.DCM_SOURCE_SHA,
             -- Accept EITHER form of provenance. See the header comment: a
             -- DCM-managed app has no commit hash on the object but is fully

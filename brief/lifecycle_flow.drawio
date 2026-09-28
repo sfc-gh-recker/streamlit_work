@@ -68,7 +68,7 @@
         <mxCell id="t3b" value="DEFINE STREAMLIT + tables + grants" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#10B981;fontSize=10;fontFamily=Courier New;" vertex="1" parent="1">
           <mxGeometry x="910" y="206" width="270" height="32" as="geometry" />
         </mxCell>
-        <mxCell id="t3c" value="Owner: functional role, never a person&#xa;Source: immutable Git tag&#xa;git_commit_hash: matches the tag&#xa;IN CATALOG" style="text;html=1;fontSize=11;align=left;fontColor=#475569;" vertex="1" parent="1">
+        <mxCell id="t3c" value="Owner: functional role, never a person&#xa;Source: immutable Git tag&#xa;Provenance: DCM deployment history&#xa;(no hash on the object)&#xa;IN CATALOG" style="text;html=1;fontSize=11;align=left;fontColor=#475569;" vertex="1" parent="1">
           <mxGeometry x="915" y="246" width="285" height="66" as="geometry" />
         </mxCell>
         <mxCell id="t3d" value="DE SUPPORTS — ON CALL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#10B981;fontSize=11;fontStyle=1;fontColor=#065F46;" vertex="1" parent="1">
@@ -102,7 +102,7 @@
         <mxCell id="gatetitle" value="The promotion gate is a column value, not a judgement call" style="text;html=1;fontSize=13;fontStyle=1;align=center;fontColor=#92400E;" vertex="1" parent="1">
           <mxGeometry x="430" y="452" width="620" height="20" as="geometry" />
         </mxCell>
-        <mxCell id="gatesql" value="SELECT full_name, tier, git_commit_hash&#xa;  FROM GOVERNANCE.APPS.V_STREAMLIT_INVENTORY_LATEST&#xa; WHERE git_commit_hash IS NULL;&#xa;-- everything returned here is the owner's problem, not the platform's" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=none;fontSize=11;fontFamily=Courier New;fontColor=#E2E8F0;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="1">
+        <mxCell id="gatesql" value="SELECT full_name, tier, provenance&#xa;  FROM GOVERNANCE.APPS.V_STREAMLIT_INVENTORY_LATEST&#xa; WHERE provenance = 'NONE';   -- NOT &quot;hash is null&quot;&#xa;-- accepts Git-direct OR DCM-managed; keying on the hash alone&#xa;-- would flag the most governed app in the estate" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=none;fontSize=11;fontFamily=Courier New;fontColor=#E2E8F0;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="1">
           <mxGeometry x="440" y="478" width="600" height="76" as="geometry" />
         </mxCell>
         <mxCell id="gatenote" value="Nobody types the hash in. The deployment mechanism writes it, so an app that&#xa;did not come from a repository cannot produce one." style="text;html=1;fontSize=10;align=center;fontColor=#92400E;fontStyle=2" vertex="1" parent="1">

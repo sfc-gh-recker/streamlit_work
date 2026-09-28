@@ -110,6 +110,9 @@ Each of these was hit and verified while building it, not taken from documentati
 | Gotcha | Consequence |
 |---|---|
 | `GRANT OWNERSHIP ON STREAMLIT` is unsupported in DCM *and* in SQL | Streamlit ownership **cannot be transferred**. The deploying role is the owner permanently, so admin-owned apps must be **recreated**, not re-granted. |
+| `SHOW DEPLOYMENTS IN DCM PROJECT` has a `git_commit_hash` column that **never populates** | Not even from a pinned `commits/<sha>/` path. The only Git evidence DCM keeps is `source_file_path`, so deploy from `tags/` or `commits/` — a `branches/` path records a moving pointer and the shipped commit becomes unrecoverable. |
+| `CREATE STREAMLIT` and `ADD VERSION` accept **only** `branches/` paths | They reject `tags/` and `commits/` with *Invalid git branch path*, despite the documented `FROM { <snowgit_tag_uri> \| <snowgit_commit_uri> }`. The branch is resolved to a SHA and frozen on the version, so auditability holds — but **tag-pinned releases must go through DCM**. |
+| The two mechanisms have **opposite** path requirements | Get it backwards and you either hard-fail (Streamlit) or silently lose auditability (DCM). |
 | DCM Jinja variables do not reach Streamlit Python files | Hardcoding a database name ships a PROD app reading DEV data, silently. Use `CURRENT_DATABASE()`. |
 | An explicit asset path flattens directories | `utils/config.py` materializes as `config.py` and imports break. Only a `**` glob preserves package structure. |
 | A `**` glob sweeps in `__pycache__` | Globs have no negation, so clean bytecode before deploying. |
@@ -118,6 +121,7 @@ Each of these was hit and verified while building it, not taken from documentati
 | No `ACCOUNT_USAGE.STREAMLITS` view exists | An inventory must loop `SHOW` + `DESCRIBE` into a table. |
 | Snowflake regex rejects the `(?i)` inline flag | Use `REGEXP_LIKE(col, pattern, 'i')`. |
 | DCM `ATTACH TAG` does not support STREAMLIT | Certification tags must be applied with `ALTER STREAMLIT … SET TAG`, not declaratively. |
+| `ALTER STREAMLIT … VERSION … SET ALIAS` is rejected as a syntax error | Documented in the 2025_01 BCR note, not available in 10.34.101. Name the version correctly when adding it. |
 
 ## References
 
