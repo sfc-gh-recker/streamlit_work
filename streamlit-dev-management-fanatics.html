@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="snowflake-source" content="cortex-agent-authored" />
+  <title>Streamlit Development &amp; Management on Snowflake</title>
+
+  <script type="application/json" id="snowflake-report-metadata">
+  {
+    "generated": "2026-09-28",
+    "intent": "Field guide for Streamlit in Snowflake development, Git integration, promotion, and governance. Supersedes streamlit-best-practices-fanatics.html (Feb 2026), correcting its password-auth CI/CD example and bare --replace deployment guidance.",
+    "audience": "Fanatics DSEA practitioners",
+    "dataSources": [
+      { "type": "query", "warehouse": "SNOW_INTELLIGENCE_DEMO_WH",
+        "sql": "SELECT * FROM GOVERNANCE.APPS.V_STREAMLIT_SPRAWL_SUMMARY" }
+    ],
+    "sections": [
+      { "id": "audit", "title": "What an audit finds",
+        "dataSources": [{ "type": "query", "sql": "SELECT * FROM GOVERNANCE.APPS.V_STREAMLIT_SPRAWL_SUMMARY" }],
+        "producerNotes": "Chart and table values are inlined from a live run against account XOB85174 on 2026-09-28 (81 apps). Re-run CALL GOVERNANCE.APPS.SP_AUDIT_STREAMLIT_APPS() then the summary view to refresh." },
+      { "id": "provenance", "title": "The governance signal",
+        "dataSources": [{ "type": "query", "sql": "DESCRIBE STREAMLIT CORTEX_AGENTS_DEMO.PUBLIC.CORTEX_AGENT_CHAT_APP" }],
+        "producerNotes": "Commit hash 15e3e34e is a real value read off a deployed app in this account." },
+      { "id": "tiers", "title": "The three-tier model", "producerNotes": "Static mermaid diagram; no data source." },
+      { "id": "limitations", "title": "Verified limitations",
+        "producerNotes": "Each row was reproduced empirically in Sept 2026, not taken from documentation. Update only if re-tested." }
+    ]
+  }
+  </script>
+
+  <style>
+    :root {
+      color-scheme: light dark;
+      --sf-blue: light-dark(#11567F, #38BDF8);
+      --sf-accent: light-dark(#29B5E8, #22D3EE);
+      --ink: light-dark(#1E293B, #E2E8F0);
+      --ink-strong: light-dark(#0D2B45, #F1F5F9);
+      --ink-mute: light-dark(#475569, #94A3B8);
+      --rule: light-dark(#D1D5DB, #374151);
+      --panel: light-dark(#F8FAFC, #0F172A);
+      --code-bg: light-dark(#1E293B, #020617);
+      --code-fg: light-dark(#E2E8F0, #CBD5E1);
+      --ok-bg: light-dark(#ECFDF5, #052E23);
+      --ok-br: light-dark(#10B981, #059669);
+      --warn-bg: light-dark(#FFFBEB, #2C1F02);
+      --warn-br: light-dark(#F59E0B, #D97706);
+      --bad-bg: light-dark(#FEF2F2, #2D0B0B);
+      --bad-br: light-dark(#EF4444, #DC2626);
+      --info-bg: light-dark(#EFF6FF, #0B1E33);
+      --info-br: light-dark(#29B5E8, #0EA5E9);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', Roboto, sans-serif;
+      max-width: 940px; width: 100%;
+      margin: 0 auto; padding: clamp(16px, 4vw, 28px);
+      color: var(--ink); line-height: 1.65;
+    }
+    h1 { font-size: clamp(1.6rem, 5vw, 2.2rem); color: var(--ink-strong); margin: 0 0 8px; letter-spacing: -0.5px; }
+    h2 {
+      font-size: clamp(1.2rem, 3.6vw, 1.5rem); color: var(--ink-strong);
+      border-bottom: 3px solid var(--sf-accent); padding-bottom: 7px;
+      margin: 44px 0 16px;
+    }
+    h3 { font-size: 1.08rem; color: var(--sf-blue); margin: 26px 0 8px; }
+    h4 { font-size: 0.98rem; color: var(--ink-mute); margin: 18px 0 6px; }
+    a { color: light-dark(#2563EB, #60A5FA); }
+    img, svg { max-width: 100%; height: auto; }
+    p, ul, ol { margin: 0 0 13px; }
+    ul, ol { padding-left: 22px; }
+    li { margin-bottom: 5px; }
+
+    .lede { font-size: 1.05rem; color: var(--ink-mute); margin-bottom: 4px; }
+    .byline { font-size: .86rem; color: var(--ink-mute); margin-bottom: 26px; }
+    .supersede {
+      font-size: .84rem; color: var(--ink-mute); font-style: italic;
+      border-left: 3px solid var(--rule); padding-left: 12px; margin: 18px 0 26px;
+    }
+
+    pre {
+      background: var(--code-bg); color: var(--code-fg);
+      border-radius: 9px; padding: 15px 17px; overflow-x: auto;
+      font-size: .84rem; line-height: 1.55; margin: 0 0 15px;
+    }
+    code { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: .86em; }
+    p code, li code, td code, th code {
+      background: var(--panel); border: 1px solid var(--rule);
+      border-radius: 4px; padding: 1px 5px; color: var(--sf-blue);
+    }
+    pre code { background: none; border: none; padding: 0; color: inherit; }
+    .kw { color: #93C5FD; } .str { color: #86EFAC; }
+    .cmt { color: #64748B; font-style: italic; } .bad { color: #FCA5A5; }
+
+    .box { border-radius: 9px; padding: 15px 18px; margin: 0 0 16px; font-size: .94rem; }
+    .box > :last-child { margin-bottom: 0; }
+    .box-title { font-weight: 700; margin-bottom: 5px; }
+    .info { background: var(--info-bg); border-left: 4px solid var(--info-br); }
+    .tip { background: var(--ok-bg); border-left: 4px solid var(--ok-br); }
+    .warn { background: var(--warn-bg); border-left: 4px solid var(--warn-br); }
+    .danger { background: var(--bad-bg); border-left: 4px solid var(--bad-br); }
+
+    .table-wrap { overflow-x: auto; margin: 0 0 18px; }
+    table { border-collapse: collapse; width: 100%; font-size: .9rem; }
+    th, td { border: 1px solid var(--rule); padding: 8px 11px; text-align: left; vertical-align: top; }
+    th { background: var(--panel); font-weight: 600; color: var(--ink-strong); }
+
+    .chart-box { position: relative; width: 100%; height: clamp(260px, 48vw, 330px); margin-bottom: 18px; }
+    .chart-box > canvas { width: 100% !important; height: 100% !important; }
+
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 0 0 20px; }
+    .kpi { background: var(--panel); border: 1px solid var(--rule); border-radius: 9px; padding: 14px; }
+    .kpi .n { font-size: 1.7rem; font-weight: 700; color: var(--ink-strong); line-height: 1.1; }
+    .kpi .l { font-size: .79rem; color: var(--ink-mute); margin-top: 3px; }
+    .kpi.alarm .n { color: light-dark(#DC2626, #F87171); }
+    .kpi.good .n { color: light-dark(#059669, #34D399); }
+
+    .toc { background: var(--panel); border: 1px solid var(--rule); border-radius: 9px; padding: 18px 22px; margin-bottom: 8px; }
+    .toc h2 { border: none; margin: 0 0 8px; font-size: 1.05rem; padding: 0; }
+    .toc ol { margin: 0; padding-left: 20px; }
+    .toc a { text-decoration: none; font-weight: 500; }
+    .toc a:hover { text-decoration: underline; }
+
+    .mermaid { text-align: center; margin: 0 0 18px; }
+    footer { margin-top: 48px; padding-top: 18px; border-top: 1px solid var(--rule); font-size: .84rem; color: var(--ink-mute); }
+  </style>
+</head>
+<body>
+
+<h1>Streamlit Development &amp; Management on Snowflake</h1>
+<p class="lede">Development, Git integration, promotion, and governance for Streamlit in Snowflake at enterprise scale.</p>
+<p class="byline">Prepared for the Fanatics DSEA team &middot; Rich Ecker, Solutions Engineering &middot; September 2026</p>
+
+<p class="supersede">
+  Supersedes <em>streamlit-best-practices-fanatics.html</em> (February 2026). Two items in that
+  version are now corrected: its CI/CD example authenticated with a stored password, and it
+  recommended bare <code>snow streamlit deploy --replace</code>, which can drop an app's grants.
+  Workspaces, Git integration, and DCM Projects did not exist in that guide.
+</p>
+
+<nav class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#problem">The problem worth solving</a></li>
+    <li><a href="#provenance">The governance signal</a></li>
+    <li><a href="#audit">What an audit finds</a></li>
+    <li><a href="#tiers">The three-tier model</a></li>
+    <li><a href="#structure">Project structure</a></li>
+    <li><a href="#rights">Owner's rights vs caller's rights</a></li>
+    <li><a href="#git">Git integration</a></li>
+    <li><a href="#promotion">Promotion with DCM Projects</a></li>
+    <li><a href="#cicd">CI/CD</a></li>
+    <li><a href="#pinning">Dependency pinning</a></li>
+    <li><a href="#state">Session state: four rules</a></li>
+    <li><a href="#limitations">Verified limitations</a></li>
+    <li><a href="#sharing">Sharing apps</a></li>
+    <li><a href="#refs">References</a></li>
+  </ol>
+</nav>
+
+<h2 id="problem">1. The problem worth solving</h2>
+
+<p>
+  Analysts build Streamlit dashboards. The dashboards break. The data engineering team gets the
+  ticket, having never seen the code, never reviewed the query, and never agreed to support it.
+</p>
+
+<p>
+  The instinct is to restrict who can build apps. That is the wrong diagnosis — self-service is
+  working, and that is the point. The real failure is that <strong>there is no defensible line
+  between a dashboard someone assembled in an afternoon and a dashboard the business now depends
+  on</strong>, so every app defaults to being the platform team's problem.
+</p>
+
+<p>
+  A line drawn with naming conventions or a spreadsheet of "official" apps does not hold. It
+  depends on people remembering to update it, and it is unfalsifiable — anyone can claim their app
+  matters.
+</p>
+
+<h2 id="provenance">2. The governance signal</h2>
+
+<p>
+  Snowflake records where an app's code came from, on the app object itself, written by the
+  deployment mechanism rather than by a person.
+</p>
+
+<pre><code><span class="kw">DESCRIBE STREAMLIT</span> CORTEX_AGENTS_DEMO.PUBLIC.CORTEX_AGENT_CHAT_APP;</code></pre>
+
+<pre><code>default_version_source_location_uri  @...GITHUB_REPO_CORTEX_AGENTS_DEMO/branches/main/agent_app/
+default_version_git_commit_hash      15e3e34e80cdc1e8d64b34a1d0b8ad206d002c1b</code></pre>
+
+<p>
+  That is a real value from a live app. Its running code traces to a specific commit on a specific
+  branch — you can open that commit and read the diff that produced what users see right now.
+  Nobody typed the hash in, and an app that did not come from a repository cannot produce one.
+</p>
+
+<div class="box warn">
+  <div class="box-title">The trap: there are two governed paths, recorded differently</div>
+  <p>
+    This is the part most people get wrong, and getting it wrong misclassifies your <em>best</em>
+    apps as ungoverned.
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Path</th><th><code>source_location_uri</code></th><th><code>git_commit_hash</code></th><th>Where the evidence lives</th></tr></thead>
+      <tbody>
+        <tr><td><code>CREATE STREAMLIT FROM @git_repo/…</code></td><td>Git stage path</td><td><strong>populated</strong></td><td>The app object</td></tr>
+        <tr><td>DCM <code>DEFINE STREAMLIT FROM 'asset://…'</code></td><td><code>asset://&lt;name&gt;</code></td><td><em>empty</em></td><td><code>SHOW DEPLOYMENTS IN DCM PROJECT</code></td></tr>
+        <tr><td>Clicked together in Snowsight</td><td>internal stage</td><td><em>empty</em></td><td><strong>nowhere</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    A DCM-deployed app has no commit hash on the object, yet it is the most governed kind of app in
+    the estate: reviewed, CI/CD-deployed, reproducible. An audit keyed only on the hash reports it
+    as ungoverned. <strong>Accept either form of evidence.</strong>
+  </p>
+</div>
+
+<h2 id="audit">3. What an audit finds</h2>
+
+<p>
+  There is no <code>ACCOUNT_USAGE</code> view for Streamlit, so an inventory has to loop
+  <code>SHOW STREAMLITS</code> plus <code>DESCRIBE STREAMLIT</code> into a table. Run against a real
+  account of 81 apps, that produced:
+</p>
+
+<div class="kpis">
+  <div class="kpi"><div class="n">81</div><div class="l">Streamlit apps</div></div>
+  <div class="kpi alarm"><div class="n">79</div><div class="l">No provenance (97.5%)</div></div>
+  <div class="kpi alarm"><div class="n">60</div><div class="l">Legacy source model (74%)</div></div>
+  <div class="kpi good"><div class="n">2</div><div class="l">Certified</div></div>
+</div>
+
+<div class="chart-box"><canvas id="findings"></canvas></div>
+
+<p>Three of these change how you plan:</p>
+
+<ul>
+  <li><strong>79 of 81 have no provenance.</strong> When one breaks there is no diff to read and no commit to roll back to. That is the support-load problem in one number.</li>
+  <li><strong>60 of 81 use the legacy <code>ROOT_LOCATION</code> source model.</strong> Those apps <em>cannot</em> use Git integration or the container runtime at all. This is a hard technical ceiling, not a process gap — three quarters of the estate must be migrated to <code>FROM</code> before a Git workflow applies to them. Any plan that says "start using Git" understates the work by that number.</li>
+  <li><strong>81 of 81 have no exact version pin.</strong> Range pins silently do not take effect, so every app can change behaviour with no code edit.</li>
+</ul>
+
+<div class="box info">
+  <div class="box-title">Reproduce it on your own account</div>
+<pre style="margin:8px 0 0;"><code>snow sql -f audit/streamlit_inventory.sql
+snow sql -q <span class="str">"CALL GOVERNANCE.APPS.SP_AUDIT_STREAMLIT_APPS()"</span>
+snow sql -q <span class="str">"SELECT * FROM GOVERNANCE.APPS.V_STREAMLIT_SPRAWL_SUMMARY"</span></code></pre>
+</div>
+
+<h2 id="tiers">4. The three-tier model</h2>
+
+<pre class="mermaid">
+flowchart LR
+  A["Tier 1 Explore<br/>personal workspace"] -->|"open a PR"| B["Tier 2 Team<br/>team schema"]
+  B -->|"GATE: provenance"| C["Tier 3 Certified<br/>PROD schema"]
+  C --> D["Catalog portal"]
+</pre>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th></th><th>Tier 1 Explore</th><th>Tier 2 Team</th><th>Tier 3 Certified</th></tr></thead>
+    <tbody>
+      <tr><th>Where</th><td>Personal workspace</td><td>Team schema</td><td>PROD schema</td></tr>
+      <tr><th>Owner</th><td>Individual</td><td>Named team role</td><td><strong>Functional role, never a person</strong></td></tr>
+      <tr><th>Source of truth</th><td>The workspace</td><td>Feature branch</td><td>Immutable Git tag</td></tr>
+      <tr><th>Deployed by</th><td>The user</td><td><code>snow streamlit deploy</code></td><td>DCM project via CI/CD</td></tr>
+      <tr><th>Provenance</th><td>none</td><td>present</td><td>present</td></tr>
+      <tr><th>In the catalog</th><td>no</td><td>no</td><td><strong>yes</strong></td></tr>
+      <tr><th>Platform supports it</th><td><strong>no</strong></td><td><strong>no</strong></td><td><strong>yes</strong></td></tr>
+      <tr><th>When it breaks</th><td>Owner fixes or deletes</td><td>Owning team fixes</td><td>Incident, on-call, rollback</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="box tip">
+  <div class="box-title">Why this works</div>
+  The tier is derived from a property of the object, not from an opinion. When a Tier 1 app breaks,
+  the conversation is a query rather than a negotiation — and the route to getting support is
+  visible and self-service: put it in Git, open a PR. That reframes the platform team from
+  gatekeeper to provider of a promotion path.
+</div>
+
+<h2 id="structure">5. Project structure</h2>
+
+<p>Keep <code>streamlit_app.py</code> about layout and move queries into modules, so session-state behaviour stays easy to reason about.</p>
+
+<pre><code>demo_app/
+├── manifest.yml                  <span class="cmt"># DCM targets, assets, templating</span>
+├── sources/definitions/
+│   ├── pipeline.sql              <span class="cmt"># DEFINE TABLE / VIEW</span>
+│   ├── access.sql                <span class="cmt"># DEFINE ROLE + GRANT</span>
+│   └── dashboard.sql             <span class="cmt"># DEFINE STREAMLIT</span>
+└── streamlit/merch_performance/
+    ├── streamlit_app.py          <span class="cmt"># entry point — UI only</span>
+    ├── requirements.txt          <span class="cmt"># exact pins</span>
+    └── utils/
+        ├── config.py             <span class="cmt"># runtime env inference</span>
+        └── data.py               <span class="cmt"># parameterized queries</span></code></pre>
+
+<ul>
+  <li>Entry point is always <code>streamlit_app.py</code>.</li>
+  <li>No <code>if __name__ == "__main__"</code> — Streamlit re-runs the whole file on every interaction.</li>
+  <li><code>.github/workflows/</code> must be at the <strong>repository root</strong>. Actions does not discover workflows in subdirectories.</li>
+  <li>Never commit <code>.streamlit/secrets.toml</code>.</li>
+</ul>
+
+<h2 id="rights">6. Owner's rights vs caller's rights</h2>
+
+<p>
+  This is the most important architectural decision, because it determines <em>whose</em>
+  permissions the app uses. A Streamlit app runs with the privileges of its <strong>owner
+  role</strong> — every viewer reaches data through them.
+</p>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Aspect</th><th>Owner's rights (default)</th><th>Caller's rights</th></tr></thead>
+    <tbody>
+      <tr><th>Runs as</th><td>The creator's role</td><td>The viewer's role</td></tr>
+      <tr><th>Data seen</th><td>Same for all viewers</td><td>Only what each viewer's role permits</td></tr>
+      <tr><th><code>CURRENT_ROLE()</code></th><td>The <em>owner's</em> role</td><td>The <strong>viewer's</strong> role</td></tr>
+      <tr><th>Row access policies segment viewers</th><td><strong>no</strong></td><td>yes</td></tr>
+      <tr><th>Viewer data grants</th><td>Not needed</td><td><strong>Required for every viewer</strong></td></tr>
+      <tr><th>Runtime</th><td>Either</td><td>Container only</td></tr>
+      <tr><th>Best for</th><td>Dashboards and reporting — most apps</td><td>Per-user data segmentation</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="box danger">
+  <div class="box-title">80% of audited apps are owned by an admin role</div>
+  65 of 81 apps are owned by <code>ACCOUNTADMIN</code>, <code>SYSADMIN</code>, or
+  <code>SECURITYADMIN</code>. Each hands admin-level reach to everyone who can open the dashboard.
+  This is the highest-severity finding in the estate, ahead of the provenance gap — and because
+  <strong>Streamlit ownership cannot be transferred</strong>, those apps must be
+  <em>recreated</em> under a functional role, not re-granted.
+</div>
+
+<h3>The self-service unblock</h3>
+<p>Non-admin users being unable to create apps is a real blocker with a small fix:</p>
+
+<pre><code><span class="kw">GRANT USAGE ON DATABASE</span> APP_DB              <span class="kw">TO ROLE</span> SIS_DEVELOPER;
+<span class="kw">GRANT USAGE ON SCHEMA</span> APP_DB.APPS           <span class="kw">TO ROLE</span> SIS_DEVELOPER;
+<span class="kw">GRANT CREATE STREAMLIT ON SCHEMA</span> APP_DB.APPS <span class="kw">TO ROLE</span> SIS_DEVELOPER;
+<span class="kw">GRANT USAGE ON WAREHOUSE</span> APP_WH             <span class="kw">TO ROLE</span> SIS_DEVELOPER;
+<span class="cmt">-- container runtime only</span>
+<span class="kw">GRANT USAGE ON COMPUTE POOL</span> APP_POOL        <span class="kw">TO ROLE</span> SIS_DEVELOPER;</code></pre>
+
+<div class="box info">
+  <div class="box-title">Two grants people ask for and usually do not need</div>
+  <p>
+    <code>CREATE STAGE</code> is required only for the legacy <code>ROOT_LOCATION</code> pattern. On
+    the <code>FROM</code> model the app uses an embedded stage, so if users are blocked on stage
+    creation, <strong>migrating removes the blocker</strong> rather than needing a new privilege.
+  </p>
+  <p>
+    <code>CREATE STREAM</code> is required only if the app itself operates on streams. Check whether
+    that is genuinely the case — the requirement is often inherited from the legacy pattern. This is
+    a chance to remove a privilege instead of adding one.
+  </p>
+</div>
+
+<h2 id="git">7. Git integration</h2>
+
+<p>Check the source model <em>first</em> — only one of the two can use Git at all:</p>
+
+<pre><code><span class="kw">DESCRIBE STREAMLIT</span> &lt;db&gt;.&lt;schema&gt;.&lt;app&gt;;
+<span class="cmt">-- returns root_location              -> LEGACY, cannot use Git</span>
+<span class="cmt">-- returns live_version_location_uri  -> current, Git-capable</span></code></pre>
+
+<h3>Public repository — no credentials</h3>
+<pre><code><span class="kw">CREATE OR REPLACE API INTEGRATION</span> GIT_API_MY_ORG
+  API_PROVIDER = git_https_api
+  API_ALLOWED_PREFIXES = (<span class="str">'https://github.com/my-org'</span>)
+  ENABLED = <span class="kw">TRUE</span>;
+
+<span class="kw">CREATE OR REPLACE GIT REPOSITORY</span> MY_DB.MY_SCHEMA.MY_REPO
+  API_INTEGRATION = GIT_API_MY_ORG
+  ORIGIN = <span class="str">'https://github.com/my-org/my-repo'</span>;
+
+<span class="kw">ALTER GIT REPOSITORY</span> MY_DB.MY_SCHEMA.MY_REPO <span class="kw">FETCH</span>;</code></pre>
+
+<h3>Private repository — read-only secret</h3>
+<pre><code><span class="kw">CREATE OR REPLACE SECRET</span> MY_DB.MY_SCHEMA.GIT_PAT
+  TYPE = PASSWORD
+  USERNAME = <span class="str">'my-github-user'</span>
+  PASSWORD = <span class="str">'&lt;fine-grained PAT, Contents: Read&gt;'</span>;</code></pre>
+
+<p>
+  Then add <code>ALLOWED_AUTHENTICATION_SECRETS</code> to the integration and
+  <code>GIT_CREDENTIALS</code> to the repository. Snowflake only ever <em>fetches</em> — never grant
+  write scope.
+</p>
+
+<div class="box warn">
+  <div class="box-title">SSO gotcha</div>
+  If the repository is in an organization with SAML SSO enforced, a <em>classic</em> PAT must be
+  explicitly authorized for that organization (Configure SSO → Authorize) or the fetch fails with an
+  opaque not-found error indistinguishable from a wrong URL. Fine-grained tokens scoped to the
+  repository avoid this.
+</div>
+
+<p>Deploying straight from Git is what puts the commit hash on the object. Use a <strong>tag</strong> for production — a branch moves, a tag is what you can roll back to.</p>
+
+<pre><code><span class="kw">CREATE OR REPLACE STREAMLIT</span> MY_DB.SERVE.MY_APP
+  <span class="kw">FROM</span> @MY_DB.MY_SCHEMA.MY_REPO/branches/main/apps/my_app/
+  MAIN_FILE = <span class="str">'streamlit_app.py'</span>
+  QUERY_WAREHOUSE = MY_WH;</code></pre>
+
+<h2 id="promotion">8. Promotion with DCM Projects</h2>
+
+<p>
+  A dashboard is the visible part of something larger: the tables it reads, the view that defines
+  its contract, the roles that decide who sees what. Promoting only the Python file is how you get a
+  PROD app pointed at a DEV table. <strong>DCM Projects make the app, its data, and its access model
+  one deployable unit.</strong>
+</p>
+
+<pre><code>snow dcm plan   --target prod --save-output
+snow dcm deploy --target prod --alias <span class="str">"$(git rev-parse --short HEAD)"</span></code></pre>
+
+<div class="box danger">
+  <div class="box-title">DCM Jinja variables do not reach your Python files</div>
+  <p>You can template the <code>DEFINE STREAMLIT</code> statement. You cannot template the app source. The tempting shortcut is fatal:</p>
+<pre style="margin:8px 0;"><code><span class="cmt"># WRONG — deploys happily to PROD, silently reads DEV data</span>
+DATABASE = <span class="bad">"FANATICS_MERCH_DEV"</span></code></pre>
+  <p>Nothing errors. The dashboard renders. The numbers are just wrong, which is worse than a failure. Ask Snowflake at runtime instead:</p>
+<pre style="margin:8px 0 0;"><code>database = conn.query(<span class="str">"SELECT CURRENT_DATABASE() AS DB"</span>, ttl=<span class="str">3600</span>)[<span class="str">"DB"</span>].iloc[<span class="str">0</span>]</code></pre>
+</div>
+
+<div class="box warn">
+  <div class="box-title">Asset globs: deploys cleanly, fails at runtime</div>
+  <p>The literal directory prefix before the first wildcard is stripped when files are materialized. For an app with a <code>utils/</code> package:</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Manifest entry</th><th><code>utils/config.py</code> becomes</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td><code>'app/utils/config.py'</code></td><td><code>config.py</code></td><td><strong>imports break</strong></td></tr>
+        <tr><td><code>'app/utils/*.py'</code></td><td><code>config.py</code></td><td><strong>imports break</strong></td></tr>
+        <tr><td><code>'app/**/*'</code></td><td><code>utils/config.py</code></td><td>correct</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    So any app with a subpackage <strong>requires</strong> the <code>**</code> form. The cost is that
+    <code>**</code> sweeps in <code>__pycache__</code>, which DCM does not exclude — set
+    <code>PYTHONDONTWRITEBYTECODE=1</code> and clean before deploying. Always verify with
+    <code>find out/rendered/assets -type f</code>.
+  </p>
+</div>
+
+<h2 id="cicd">9. CI/CD</h2>
+
+<div class="box danger">
+  <div class="box-title">Two corrections to the February guide</div>
+  <p>
+    <strong>Authentication.</strong> That guide stored a password as <code>SNOWCLI_PW</code>.
+    Snowflake's CI/CD guidance says password authentication is supported for legacy workflows but is
+    <em>not recommended for production</em>. Use key-pair, or OIDC workload identity federation to
+    remove the stored secret entirely.
+  </p>
+  <p>
+    <strong>Never bare <code>--replace</code>.</strong> <code>snow streamlit deploy --replace</code>
+    is a create-or-replace that <strong>can drop the grants</strong> on the app — silently revoking
+    business users' access to a production dashboard. DCM reconciles the object and keeps grants
+    declared alongside it.
+  </p>
+</div>
+
+<pre><code><span class="kw">- name</span>: Clean stray bytecode
+  <span class="kw">run</span>: find . -name <span class="str">'__pycache__'</span> -type d -prune -exec rm -rf {} + || true
+
+<span class="kw">- name</span>: DCM plan
+  <span class="kw">env</span>:
+    SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT           <span class="cmt"># key-pair, not a password</span>
+    SNOWFLAKE_PRIVATE_KEY_PATH: ~/.snowflake/rsa_key.p8
+    PYTHONDONTWRITEBYTECODE: <span class="str">'1'</span>
+  <span class="kw">run</span>: snow dcm plan --target dev --save-output</code></pre>
+
+<p>
+  Put required reviewers on the GitHub <strong>Environment</strong>, not in workflow logic —
+  environment protection cannot be bypassed by editing the workflow in the same PR. Then verify
+  provenance landed, and fail the build if it did not, so the catalog stays honest.
+</p>
+
+<h2 id="pinning">10. Dependency pinning</h2>
+
+<div class="box danger">
+  <div class="box-title">Pin exact versions. Never ranges.</div>
+  Range pins such as <code>streamlit&gt;=1.39.0</code> do <strong>not</strong> reliably take effect
+  on the warehouse runtime (SNOW-3601653). The app runs on whatever the runtime picks, and that can
+  change with no code edit and no deployment. <strong>81 of 81 audited apps have no exact pin.</strong>
+  This is not hypothetical — the filter-state bug investigated in September reproduced on deployed
+  SiS but not on local Streamlit 1.50, because the deployed version was not what the developer
+  assumed.
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Runtime</th><th>Dependency file</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Warehouse</td><td><code>environment.yml</code></td><td>Anaconda channel; supported list tops out at 1.52.2</td></tr>
+      <tr><td>Container</td><td><code>requirements.txt</code> / <code>pyproject.toml</code></td><td>PyPI; required for caller's rights and non-Anaconda packages</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="box warn">
+  <div class="box-title">Two measured traps</div>
+  <p>
+    <strong><code>DEFINE STREAMLIT</code> defaults to the container runtime.</strong> Omitting
+    <code>COMPUTE_POOL</code> and <code>RUNTIME_NAME</code> still produced a container-runtime app —
+    which silently invalidated a shipped <code>environment.yml</code>, since that is the warehouse
+    format. The file was present, correct, committed, reviewed, and had no effect. Declare the
+    runtime explicitly.
+  </p>
+  <p>
+    <strong><code>user_packages</code> cannot verify container-runtime pins.</strong> It is populated
+    for warehouse-runtime apps but comes back <em>empty</em> for container-runtime apps even with a
+    correct <code>requirements.txt</code> — reading it would tell you the pin failed when it had not.
+    Report the resolved version from inside the app instead:
+  </p>
+<pre style="margin:8px 0 0;"><code>st.caption(<span class="str">f"Streamlit runtime: `{st.__version__}`"</span>)</code></pre>
+</div>
+
+<h2 id="state">11. Session state: four rules</h2>
+
+<p>
+  These come from the September filter-state investigation, where a deselected filter reappeared
+  after switching grids. Each maps to a failure observed on a deployed app.
+</p>
+
+<h4>Rule 1 — seed defaults once, before any widget</h4>
+<pre><code>FILTER_DEFAULTS = {<span class="str">"flt_leagues"</span>: [], <span class="str">"flt_channels"</span>: []}
+<span class="kw">for</span> key, default <span class="kw">in</span> FILTER_DEFAULTS.items():
+    st.session_state.setdefault(key, <span class="kw">list</span>(default) <span class="kw">if isinstance</span>(default, <span class="kw">list</span>) <span class="kw">else</span> default)</code></pre>
+
+<h4>Rule 2 — a keyed widget passes no <code>index=</code> / <code>value=</code> / <code>default=</code></h4>
+<pre><code>st.multiselect(<span class="str">"League"</span>, options=leagues, key=<span class="str">"flt_leagues"</span>)                  <span class="cmt"># correct</span>
+st.multiselect(<span class="str">"League"</span>, options=leagues, <span class="bad">default=[]</span>, key=<span class="str">"flt_leagues"</span>)     <span class="cmt"># wrong</span></code></pre>
+<p>With a <code>key</code>, <code>session_state</code> is the source of truth and the literal is only an initial default. Supplying both makes them compete.</p>
+
+<h4>Rule 3 — resets are <code>on_click</code> callbacks, never "pending flag + <code>st.rerun()</code>"</h4>
+<pre><code><span class="kw">def</span> _clear_filters():
+    <span class="kw">for</span> k, v <span class="kw">in</span> FILTER_DEFAULTS.items():
+        st.session_state[k] = <span class="kw">list</span>(v) <span class="kw">if isinstance</span>(v, <span class="kw">list</span>) <span class="kw">else</span> v
+
+st.button(<span class="str">"Clear filters"</span>, on_click=_clear_filters)</code></pre>
+<p>Callbacks run <em>before</em> the script re-executes, so widgets rebuild from the reset value. A mid-script <code>st.rerun()</code> truncates the run before later widgets re-register.</p>
+
+<h4>Rule 4 — never assign to a widget-bound key after that widget has rendered</h4>
+<p>
+  Current Streamlit raises <code>StreamlitAPIException</code>. Older deployed runtimes instead
+  produce a stale value that reappears on the next unrelated rerun — much harder to diagnose, and
+  exactly what happened. Snowflake Support case 01322560 classifies this as expected Streamlit
+  execution semantics, not a platform defect.
+</p>
+
+<h2 id="limitations">12. Verified limitations</h2>
+
+<p>Each of these was reproduced empirically, not taken from documentation.</p>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Limitation</th><th>Consequence</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>GRANT OWNERSHIP ON STREAMLIT</code> unsupported in DCM <strong>and</strong> in SQL</td>
+        <td>Ownership <strong>cannot be transferred</strong>. The deploying role owns the app permanently, so admin-owned apps must be <em>recreated</em>. Keep infrastructure and app in <strong>separate DCM projects</strong> so the app-owner role can stay least-privilege.</td>
+      </tr>
+      <tr><td>DCM Jinja does not reach Streamlit Python files</td><td>Use <code>CURRENT_DATABASE()</code>; a hardcoded name ships a PROD app reading DEV data.</td></tr>
+      <tr><td>Legacy <code>ROOT_LOCATION</code> apps cannot use Git or the container runtime</td><td>74% of the audited estate. Migration is a prerequisite, not a detail.</td></tr>
+      <tr><td>Explicit asset paths flatten directories</td><td>Only a <code>**</code> glob preserves package structure.</td></tr>
+      <tr><td><code>**</code> globs sweep in <code>__pycache__</code></td><td>Globs have no negation; clean bytecode before deploying.</td></tr>
+      <tr><td><code>DEFINE STREAMLIT</code> defaults to container runtime</td><td>A shipped <code>environment.yml</code> is silently ignored.</td></tr>
+      <tr><td><code>user_packages</code> empty for container-runtime apps</td><td>Cannot verify pins; report <code>st.__version__</code> instead.</td></tr>
+      <tr><td>No <code>ACCOUNT_USAGE.STREAMLITS</code> view</td><td>An inventory must loop <code>SHOW</code> + <code>DESCRIBE</code> into a table.</td></tr>
+      <tr><td>DCM <code>ATTACH TAG</code> does not support STREAMLIT</td><td>Certification tags need <code>ALTER STREAMLIT … SET TAG</code>; the registry table is the declarative record.</td></tr>
+      <tr><td>Snowflake regex rejects the <code>(?i)</code> inline flag</td><td>Use <code>REGEXP_LIKE(col, pattern, 'i')</code>.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2 id="sharing">13. Sharing apps</h2>
+
+<div class="box danger">
+  <div class="box-title">Do not share apps by emailing .py files</div>
+  Recipients lack the creator's secrets, roles, and connection context, so the app fails
+  immediately. Deploy it and share by role grant.
+</div>
+
+<pre><code><span class="kw">GRANT USAGE ON STREAMLIT</span> analytics_db.dashboards.my_app <span class="kw">TO ROLE</span> analyst_role;
+
+<span class="cmt">-- so certified apps become visible as they are added</span>
+<span class="kw">GRANT USAGE ON FUTURE STREAMLITS IN SCHEMA</span> analytics_db.dashboards <span class="kw">TO ROLE</span> analyst_role;</code></pre>
+
+<p>
+  Viewers need <code>USAGE</code> on the database, schema, and Streamlit object — and under owner's
+  rights, <strong>no grants on the underlying data at all</strong>. That is the main ergonomic
+  benefit and why owner's rights is the right default for reporting.
+</p>
+
+<h2>14. Where to start</h2>
+
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>#</th><th>Step</th><th>Why in this order</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Run the audit on your own account</td><td>You cannot plan against an estate you have not measured</td></tr>
+      <tr><td>2</td><td><strong>Triage legacy <code>ROOT_LOCATION</code> apps</strong></td><td>They cannot use Git at all. Gates everything else.</td></tr>
+      <tr><td>3</td><td>Pin exact versions on business-facing apps</td><td>100% of audited apps can change behaviour with no code edit</td></tr>
+      <tr><td>4</td><td>Stand up <code>SIS_DEVELOPER</code> and functional owner roles</td><td>Unblocks self-service without admin rights</td></tr>
+      <tr><td>5</td><td>Move one real app to Git + DCM as the reference</td><td>A worked example beats a document</td></tr>
+      <tr><td>6</td><td>Recreate admin-owned production apps under functional roles</td><td>80% of audited apps hand admin rights to every viewer</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p>
+  Steps 2 and 6 both require recreating the app, so do them in one pass rather than twice.
+</p>
+
+<h2 id="refs">15. References</h2>
+
+<ul>
+  <li><a href="https://docs.snowflake.com/en/developer-guide/streamlit/about-streamlit">About Streamlit in Snowflake</a></li>
+  <li><a href="https://docs.snowflake.com/en/developer-guide/streamlit/object-management/owners-rights">Owner's rights and Streamlit apps</a></li>
+  <li><a href="https://docs.snowflake.com/en/developer-guide/streamlit/migrations-and-upgrades/overview">Understanding the different types of Streamlit objects</a></li>
+  <li><a href="https://docs.snowflake.com/en/developer-guide/streamlit/object-management/privileges">Privileges required to create and use a Streamlit app</a></li>
+  <li><a href="https://docs.snowflake.com/en/developer-guide/streamlit/streamlit-in-workspaces/streamlit-in-workspaces-overview">Streamlit in Snowflake in Workspaces</a></li>
+  <li><a href="https://docs.snowflake.com/en/user-guide/dcm-projects/dcm-projects-supported-entities">Supported entities in DCM Projects</a></li>
+  <li><a href="https://docs.snowflake.com/en/developer-guide/git/git-overview">Using a Git repository in Snowflake</a></li>
+  <li><a href="https://docs.snowflake.com/en/developer-guide/snowflake-cli/cicd/integrate-ci-cd">Integrating CI/CD with Snowflake CLI</a></li>
+  <li><a href="https://docs.streamlit.io/develop/concepts/architecture/widget-behavior">Streamlit widget behavior</a></li>
+</ul>
+
+<footer>
+  Prepared by Rich Ecker, Solutions Engineering — Snowflake.<br />
+  Supersedes <em>streamlit-best-practices-fanatics.html</em> (February 2026).<br />
+  Findings measured against a live account of 81 Streamlit apps on 28 September 2026.
+</footer>
+
+<script src="/libs/chart.js@4.4.4/chart.umd.js"></script>
+<script src="/libs/mermaid@10.9.6/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({ startOnLoad: true, securityLevel: 'strict' });
+
+  const isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const gridColor = isDark ? 'rgba(148,163,184,0.22)' : 'rgba(71,85,105,0.16)';
+  const tickColor = isDark ? '#94A3B8' : '#475569';
+
+  new Chart(document.getElementById('findings'), {
+    type: 'bar',
+    data: {
+      labels: [
+        'No provenance', 'Undocumented', 'Over a year old', 'Admin-owned',
+        'Legacy ROOT_LOCATION', 'Never named', 'Scratch / debug', 'Duplicate'
+      ],
+      datasets: [{
+        label: 'Apps affected (of 81)',
+        data: [79, 73, 68, 65, 60, 58, 23, 3],
+        backgroundColor: isDark ? '#38BDF8' : '#29B5E8',
+        borderRadius: 3
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          beginAtZero: true, max: 81,
+          grid: { color: gridColor }, ticks: { color: tickColor }
+        },
+        y: { grid: { display: false }, ticks: { color: tickColor } }
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
