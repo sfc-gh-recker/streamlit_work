@@ -31,7 +31,7 @@
 #
 # EXACT PINS, NOT RANGES, on either runtime. Range pins such as
 # streamlit>=1.39.0 do not reliably take effect (SNOW-3601653). The audit of
-# this account found 80 of 80 apps with no exact pin, and unpinned versions are
+# this account found 82 of 82 apps with no exact pin, and unpinned versions are
 # the class of problem behind the filter-state bug on the Fanatics app in
 # September, which reproduced on deployed SiS but not on local Streamlit 1.50.
 # ============================================================================

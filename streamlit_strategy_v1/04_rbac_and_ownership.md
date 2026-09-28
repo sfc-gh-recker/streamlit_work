@@ -10,7 +10,7 @@ That single fact drives everything in this document:
 - `CURRENT_ROLE()` inside the app returns the **owner's** role. Row access policies keyed on `CURRENT_ROLE()` do **not** segment viewers under owner's rights.
 - Viewers need no grants on the underlying data. That is the main ergonomic benefit, and the right default for a reporting dashboard.
 
-Measured on the audited account: **65 of 81 apps (80%) are owned by `ACCOUNTADMIN`, `SYSADMIN`, or `SECURITYADMIN`.** Each of those hands admin-level reach to everyone who can open the dashboard. This is the single highest-severity finding in the estate, ahead of the provenance gap.
+Measured on the audited account: **64 of 82 apps (78%) are owned by `ACCOUNTADMIN`, `SYSADMIN`, or `SECURITYADMIN`.** Each of those hands admin-level reach to everyone who can open the dashboard. This is the single highest-severity finding in the estate, ahead of the provenance gap.
 
 ```sql
 SELECT FULL_NAME, OWNER_ROLE, AGE_DAYS

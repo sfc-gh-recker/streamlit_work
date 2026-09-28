@@ -92,7 +92,7 @@
           <mxGeometry x="792" y="222" width="96" height="26" as="geometry" />
         </mxCell>
 
-        <mxCell id="prereq" value="PREREQUISITE&#xa;&#xa;60 of 80 apps audited are on the legacy&#xa;ROOT_LOCATION source model.&#xa;&#xa;Those apps cannot use Git integration or&#xa;the container runtime at all. They must be&#xa;migrated to the FROM source model before&#xa;any of the above applies to them." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#EF4444;strokeWidth=2;fontSize=11;align=left;spacingLeft=14;fontColor=#991B1B;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+        <mxCell id="prereq" value="PREREQUISITE&#xa;&#xa;60 of 82 apps audited are on the legacy&#xa;ROOT_LOCATION source model.&#xa;&#xa;Those apps cannot use Git integration or&#xa;the container runtime at all. They must be&#xa;migrated to the FROM source model before&#xa;any of the above applies to them." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#EF4444;strokeWidth=2;fontSize=11;align=left;spacingLeft=14;fontColor=#991B1B;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
           <mxGeometry x="60" y="440" width="330" height="160" as="geometry" />
         </mxCell>
 
@@ -116,7 +116,7 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="ownote" value="Streamlit apps run with OWNER'S RIGHTS. The owner role decides what every viewer can reach — which is why a production app&#xa;must never be owned by an individual, or by ACCOUNTADMIN. 64 of the 80 apps audited are owned by an admin role." style="text;html=1;fontSize=11;align=center;fontColor=#475569;fontStyle=2" vertex="1" parent="1">
+        <mxCell id="ownote" value="Streamlit apps run with OWNER'S RIGHTS. The owner role decides what every viewer can reach — which is why a production app&#xa;must never be owned by an individual, or by ACCOUNTADMIN. 64 of the 82 apps audited are owned by an admin role." style="text;html=1;fontSize=11;align=center;fontColor=#475569;fontStyle=2" vertex="1" parent="1">
           <mxGeometry x="160" y="618" width="1080" height="34" as="geometry" />
         </mxCell>
 

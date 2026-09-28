@@ -11,7 +11,7 @@
 --     change team the app either breaks or silently keeps their access.
 --   * A production app must NEVER be owned by ACCOUNTADMIN or SYSADMIN. Doing
 --     so hands admin-level reach to everyone who can open the dashboard. The
---     audit found 64 of 80 existing apps in this state.
+--     audit found 64 of 82 existing apps in this state.
 --   * CURRENT_ROLE() inside the app returns the OWNER's role, not the
 --     viewer's. Row access policies keyed on CURRENT_ROLE() therefore do not
 --     segment viewers under owner's rights. If per-viewer segmentation is

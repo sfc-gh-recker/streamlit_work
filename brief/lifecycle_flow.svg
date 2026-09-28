@@ -69,7 +69,7 @@
   <!-- PREREQUISITE -->
   <rect x="60" y="440" width="330" height="160" rx="10" fill="#FEF2F2" stroke="#EF4444" stroke-width="2"/>
   <text x="76" y="466" font-size="12" font-weight="700" fill="#991B1B">PREREQUISITE</text>
-  <text x="76" y="492" font-size="11" fill="#991B1B">60 of 80 apps audited are on the legacy</text>
+  <text x="76" y="492" font-size="11" fill="#991B1B">60 of 82 apps audited are on the legacy</text>
   <text x="76" y="508" font-size="11" font-family="'SF Mono',Consolas,monospace" fill="#991B1B">ROOT_LOCATION<tspan font-family="-apple-system, sans-serif"> source model.</tspan></text>
   <text x="76" y="532" font-size="11" fill="#991B1B">Those apps cannot use Git integration or</text>
   <text x="76" y="548" font-size="11" fill="#991B1B">the container runtime at all. They must be</text>
@@ -95,5 +95,5 @@
   <polyline points="1128,410 1128,425 1200,425 1200,436" fill="none" stroke="#8B5CF6" stroke-width="2" marker-end="url(#arrowPurple)"/>
 
   <text x="700" y="638" text-anchor="middle" font-size="11" font-style="italic" fill="#475569">Streamlit apps run with OWNER'S RIGHTS. The owner role decides what every viewer can reach — which is why a production app</text>
-  <text x="700" y="656" text-anchor="middle" font-size="11" font-style="italic" fill="#475569">must never be owned by an individual, or by ACCOUNTADMIN. 64 of the 80 apps audited are owned by an admin role.</text>
+  <text x="700" y="656" text-anchor="middle" font-size="11" font-style="italic" fill="#475569">must never be owned by an individual, or by ACCOUNTADMIN. 64 of the 82 apps audited are owned by an admin role.</text>
 </svg>

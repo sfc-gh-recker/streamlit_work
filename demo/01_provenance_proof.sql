@@ -92,17 +92,17 @@ FROM GOVERNANCE.APPS.V_STREAMLIT_SPRAWL_SUMMARY;
 --
 -- Three of these numbers deserve to be said out loud:
 --
---   79 of 80 have no provenance. If any of these breaks, there is no diff to
+--   81 of 82 have no provenance. If any of these breaks, there is no diff to
 --   read and no commit to roll back to. That is the support-load problem
 --   stated precisely: data engineering is being asked to fix things that have
 --   no history.
 --
---   60 of 80 are on the legacy source model. This is the one that changes
+--   60 of 82 are on the legacy source model. This is the one that changes
 --   sequencing. Three quarters of the estate cannot adopt a Git workflow
 --   without being migrated first. Any plan that assumes "just start using
 --   Git" is understating the work by the size of that number.
 --
---   80 of 80 have no exact Streamlit version pin. Range pins such as
+--   82 of 82 have no exact Streamlit version pin. Range pins such as
 --   streamlit>=1.39.0 silently do not take effect on the warehouse runtime
 --   (SNOW-3601653). Every one of these apps can change behaviour underneath
 --   its owner without a single line of code being edited. This is not

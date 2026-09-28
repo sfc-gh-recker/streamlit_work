@@ -26,7 +26,7 @@ DESCRIBE STREAMLIT <db>.<schema>.<app>;
 - returns `root_location` → **legacy**, 13 columns, cannot use Git
 - returns `live_version_location_uri` → **current**, 25 columns
 
-Measured on the audited account: **60 of 81 apps (74%) are legacy.** Three quarters of the estate cannot adopt a Git workflow until it is migrated. A rollout plan that omits this understates the work by that proportion, and the gap will surface as "why doesn't this work for my app" in week one.
+Measured on the audited account: **60 of 82 apps (73%) are legacy.** Three quarters of the estate cannot adopt a Git workflow until it is migrated. A rollout plan that omits this understates the work by that proportion, and the gap will surface as "why doesn't this work for my app" in week one.
 
 Find yours:
 

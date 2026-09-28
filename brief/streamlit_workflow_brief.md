@@ -37,25 +37,31 @@ That single column is the promotion gate and the support boundary. It replaces a
 
 `audit/streamlit_inventory.sql` inventories every app and classifies it. Run live on a working demo account:
 
-| Finding | Count (of 80) |
+| Finding | Count (of 82) |
 |---|---|
-| Total Streamlit apps | **80** |
-| No Git provenance | **79 (98.8%)** |
-| Legacy `ROOT_LOCATION` source model | **60 (75%)** |
-| Admin-owned | 64 |
+| Total Streamlit apps | **82** |
+| No Git provenance | **81 (98.8%)** |
+| Legacy `ROOT_LOCATION` source model | **60 (73%)** |
+| Admin-owned | 64 (78%) |
 | Never named (Snowsight auto-name) | 58 |
 | Undocumented | 73 |
-| Streamlit version not pinned exactly | **80 (100%)** |
+| Duplicates ("Copy of", "Backup of") | 3 |
+| Scratch / test / debug naming | 25 |
+| Streamlit version not pinned exactly | **82 (100%)** |
 | Over a year old | 68 |
+| Not inspectable at all | 1 |
 | Certified | **1** |
+
+Figures are the pre-existing estate, measured 28 September 2026. They exclude the
+three reference apps this workflow deploys, so the "before" picture stays honest.
 
 Three of these change how you plan:
 
-**79 of 80 have no provenance.** When one breaks there is no diff to read and no commit to roll back to. That is the support-load problem in one number.
+**81 of 82 have no provenance.** When one breaks there is no diff to read and no commit to roll back to. That is the support-load problem in one number.
 
-**60 of 80 are on the legacy `ROOT_LOCATION` source model.** These apps *cannot* use Git integration, *cannot* run on the container runtime, and *cannot* be multi-file edited in Snowsight. This is a hard technical ceiling, not a process gap. **Three quarters of the estate must be migrated to the `FROM` source model before a Git workflow is even possible.** Any plan that says "start using Git" is understating the work by that number. Diagnostic: `DESCRIBE STREAMLIT` returns `root_location` for legacy, `live_version_location_uri` for modern.
+**60 of 82 are on the legacy `ROOT_LOCATION` source model.** These apps *cannot* use Git integration, *cannot* run on the container runtime, and *cannot* be multi-file edited in Snowsight. This is a hard technical ceiling, not a process gap. **Three quarters of the estate must be migrated to the `FROM` source model before a Git workflow is even possible.** Any plan that says "start using Git" is understating the work by that number. Diagnostic: `DESCRIBE STREAMLIT` returns `root_location` for legacy, `live_version_location_uri` for modern.
 
-**80 of 80 have no exact version pin.** Range pins like `streamlit>=1.39.0` silently do not take effect on the warehouse runtime (SNOW-3601653). Every app can change behaviour with no code edit. This is the class of problem behind the filter-state bug on your own app in September, which reproduced on deployed SiS but not on local Streamlit 1.50.
+**82 of 82 have no exact version pin.** Range pins like `streamlit>=1.39.0` silently do not take effect on the warehouse runtime (SNOW-3601653). Every app can change behaviour with no code edit. This is the class of problem behind the filter-state bug on your own app in September, which reproduced on deployed SiS but not on local Streamlit 1.50.
 
 One honest caveat: the single certified app is *still* admin-owned and *still* unpinned. Provenance is necessary, not sufficient — it is the gate, not the whole standard.
 
@@ -101,7 +107,7 @@ than tag-deployed generally: `CREATE STREAMLIT` and `ALTER STREAMLIT … ADD VER
 reject `tags/` and `commits/` paths outright and accept only `branches/`. DCM is
 the only mechanism that will deploy from an immutable tag.
 
-Never make an individual the long-term owner of a production app. Streamlit apps run with **owner's rights** by default, so the owner role determines what every viewer can reach. An app owned by `ACCOUNTADMIN` hands admin-level data access to everyone who can open it — which is what 64 of the 80 apps above currently do.
+Never make an individual the long-term owner of a production app. Streamlit apps run with **owner's rights** by default, so the owner role determines what every viewer can reach. An app owned by `ACCOUNTADMIN` hands admin-level data access to everyone who can open it — which is what 64 of the 82 apps above currently do.
 
 ## The permissions unblock
 

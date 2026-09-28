@@ -44,19 +44,19 @@ See [`brief/streamlit_workflow_brief.md`](brief/streamlit_workflow_brief.md) and
 
 ## What the audit found on a real account
 
-| Finding | Count (of 81) |
+| Finding | Count (of 82) |
 |---|---|
-| No provenance at all | **79 (97.5%)** |
-| Legacy `ROOT_LOCATION` source model | **60 (74%)** |
+| No provenance at all | **81 (98.8%)** |
+| Legacy `ROOT_LOCATION` source model | **60 (73%)** |
 | Admin-owned (viewers inherit admin rights) | 65 |
 | Streamlit version not pinned exactly | **81 (100%)** |
 | Certified | **2** |
 
 Three of these change how you plan:
 
-- **79 of 81 have no provenance.** When one breaks there is no diff to read and no commit to roll back to.
-- **60 of 81 are legacy `ROOT_LOCATION`.** Those apps *cannot* use Git integration or the container runtime. This is a hard technical ceiling, not a process gap — three quarters of the estate must be migrated to the `FROM` source model before a Git workflow applies to them at all. Any plan that says "start using Git" understates the work by that number.
-- **81 of 81 have no exact version pin.** Range pins like `streamlit>=1.39.0` silently do not take effect (SNOW-3601653), so apps change behaviour with no code edit.
+- **81 of 82 have no provenance.** When one breaks there is no diff to read and no commit to roll back to.
+- **60 of 82 are legacy `ROOT_LOCATION`.** Those apps *cannot* use Git integration or the container runtime. This is a hard technical ceiling, not a process gap — three quarters of the estate must be migrated to the `FROM` source model before a Git workflow applies to them at all. Any plan that says "start using Git" understates the work by that number.
+- **82 of 82 have no exact version pin.** Range pins like `streamlit>=1.39.0` silently do not take effect (SNOW-3601653), so apps change behaviour with no code edit.
 
 ## Layout
 
