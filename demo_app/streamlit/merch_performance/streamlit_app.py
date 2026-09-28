@@ -30,7 +30,12 @@ from __future__ import annotations
 import plotly.express as px
 import streamlit as st
 
-from utils.config import render_env_badge, resolve_environment
+from utils.config import (
+    render_env_badge,
+    render_provenance_caption,
+    resolve_environment,
+    resolve_provenance,
+)
 from utils.data import load_date_bounds, load_filter_domain, load_performance
 
 st.set_page_config(
@@ -128,6 +133,10 @@ with st.sidebar:
     # container-runtime apps, so it cannot be used as the check. If this does
     # not read 1.52.2, the pin is not being applied.
     st.caption(f"Streamlit runtime: `{st.__version__}`")
+
+    # Self-evidencing provenance. An app that can name the commit it was
+    # built from is auditable without anyone taking its word for it.
+    render_provenance_caption(resolve_provenance(conn, env))
 
 # ---------------------------------------------------------------------------
 # Read filter values from session_state -- never from widget return values.

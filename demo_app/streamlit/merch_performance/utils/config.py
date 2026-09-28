@@ -73,3 +73,87 @@ def render_env_badge(env: dict) -> None:
         "Figures here are not production data.",
         icon=":material/warning:",
     )
+
+
+def resolve_provenance(conn, env: dict) -> dict:
+    """
+    Report which deployed version of itself this app is running.
+
+    WHY THE APP ASKS, RATHER THAN BEING TOLD
+    ----------------------------------------
+    A build step could stamp the commit into a generated Python constant, but
+    then the badge reports what the build *intended* to ship, not what is
+    actually serving traffic. Asking Snowflake at runtime cannot drift.
+
+    WHERE THE COMMIT ACTUALLY LIVES depends on how the app was deployed, and
+    the two cases do not overlap:
+
+      Deployed with CREATE STREAMLIT FROM '@git_repo/...'
+        default_version_git_commit_hash is populated on the object.
+
+      Deployed by a DCM project (this app)
+        That column is EMPTY -- source_location_uri reads 'asset://...'. The
+        commit is only recoverable from the project's latest deployment, via
+        SHOW DEPLOYMENTS IN DCM PROJECT, and even then only from the literal
+        source_file_path string: the documented git_commit_hash column of that
+        command does not populate (verified 2026-09-28). Which means a project
+        deployed from '@repo/branches/main/' is unauditable -- a branch is a
+        moving pointer. Deploy from '@repo/commits/<sha>/' instead.
+
+    So this reads the object first and falls back to the governance inventory,
+    which already reconciles both paths into COMMIT_SHA.
+    """
+    fqn = f"{env['database']}.SERVE.MERCH_PERFORMANCE"
+    out = {"version": None, "commit": None, "source": None}
+
+    try:
+        desc = conn.query(f"DESCRIBE STREAMLIT {fqn}", ttl=600)
+        out["version"] = desc["default_version_name"].iloc[0]
+        commit = (desc["default_version_git_commit_hash"].iloc[0] or "").strip()
+        if commit:
+            out["commit"] = commit
+            out["source"] = "app object"
+    except Exception:
+        # Not fatal. A viewer role may lack DESCRIBE on the Streamlit, and the
+        # dashboard must still render -- provenance is a footnote, not a
+        # prerequisite.
+        return out
+
+    if out["commit"]:
+        return out
+
+    # DCM-deployed: ask the governance inventory, which cross-references
+    # SHOW ENTITIES / SHOW DEPLOYMENTS to recover the commit.
+    try:
+        row = conn.query(
+            """
+            SELECT COMMIT_SHA
+            FROM GOVERNANCE.APPS.V_STREAMLIT_INVENTORY_LATEST
+            WHERE FULL_NAME = ? AND COMMIT_SHA IS NOT NULL
+            """,
+            params=[fqn],
+            ttl=600,
+        )
+        if not row.empty:
+            out["commit"] = row["COMMIT_SHA"].iloc[0]
+            out["source"] = "DCM deployment"
+    except Exception:
+        pass
+
+    return out
+
+
+def render_provenance_caption(prov: dict) -> None:
+    """Render the provenance footnote, stating plainly when it is absent."""
+    if prov.get("version"):
+        st.caption(f"Deployed version: `{prov['version']}`")
+
+    if prov.get("commit"):
+        st.caption(
+            f"Built from commit `{prov['commit'][:12]}` "
+            f"(via {prov['source']})"
+        )
+    else:
+        # Say so rather than rendering nothing. An app that cannot name its
+        # own commit is exactly the app this whole workflow is about.
+        st.caption("Built from commit: :orange[not traceable]")
