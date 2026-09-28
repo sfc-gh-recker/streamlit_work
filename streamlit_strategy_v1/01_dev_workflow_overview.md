@@ -122,7 +122,7 @@ The point is not to make Tier 3 hard to reach. It is to make the *cost of suppor
 | **Operate** | Monitored via the event table and `snow streamlit logs`. Changes arrive as reviewed PRs. | 3 |
 | **Retire** | Removing the `DEFINE STREAMLIT` statement drops the app on the next deployment. Retirement is a reviewed code change, not a forgotten object. | 3 |
 
-Retirement deserves emphasis. In the audited account, 68 of 81 apps were over a year old and 23 were scratch or debug apps. Nothing in the current process ever removes anything, so the estate only grows. A lifecycle without a retirement step is not a lifecycle.
+Retirement deserves emphasis. In the audited account, 68 of 82 apps were over a year old and 25 were scratch or debug apps. Nothing in the current process ever removes anything, so the estate only grows. A lifecycle without a retirement step is not a lifecycle.
 
 ## 5. What this preserves
 

@@ -67,7 +67,7 @@ These shape the design. Each cost a debugging cycle to find.
 |---|---|
 | `GRANT OWNERSHIP ON STREAMLIT` unsupported in DCM **and** in SQL | Ownership cannot be transferred. The deploying role owns the app permanently. Admin-owned apps must be **recreated**, not re-granted. See [04](04_rbac_and_ownership.md). |
 | DCM Jinja variables do not reach Streamlit Python files | The app must infer its environment at runtime via `CURRENT_DATABASE()`. Templating a database name ships a PROD app reading DEV data, silently. See [03](03_promotion_pipeline.md). |
-| Legacy `ROOT_LOCATION` apps cannot use Git integration or the container runtime | 60 of 81 apps audited are legacy. Migration to `FROM` is a **prerequisite**, not a detail. See [02](02_git_strategy.md). |
+| Legacy `ROOT_LOCATION` apps cannot use Git integration or the container runtime | 60 of 82 apps audited are legacy. Migration to `FROM` is a **prerequisite**, not a detail. See [02](02_git_strategy.md). |
 | An explicit asset path flattens directories | `utils/config.py` materializes as `config.py` and imports break. Only a `**` glob preserves package structure. See [03](03_promotion_pipeline.md). |
 | `DEFINE STREAMLIT` defaults to the container runtime | A shipped `environment.yml` is silently ignored. See [06](06_tooling_and_runtimes.md). |
 | `user_packages` is empty for container-runtime apps | It cannot verify pins. Report `st.__version__` from inside the app. See [06](06_tooling_and_runtimes.md). |
@@ -82,7 +82,7 @@ Measured across 81 Streamlit apps:
 
 | Finding | Count | Share |
 |---|---|---|
-| No provenance at all | 79 | 97.5% |
+| No provenance at all | 81 | 98.8% |
 | Legacy `ROOT_LOCATION` source model | 60 | 74% |
 | Admin-owned | 65 | 80% |
 | Never named (Snowsight auto-name) | 58 | 72% |
