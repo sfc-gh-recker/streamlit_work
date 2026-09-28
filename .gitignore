@@ -1,0 +1,21 @@
+# Never commit local credentials. The deployed app needs none of this --
+# under owner's rights Snowflake authenticates it automatically.
+.streamlit/secrets.toml
+**/.streamlit/secrets.toml
+
+# DCM build output
+out/
+.snowflake/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.uv/
+
+# OS
+.DS_Store
+
+# Cortex Code plans (local working notes)
+.snowflake/cortex/plans/

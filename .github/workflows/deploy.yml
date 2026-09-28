@@ -1,0 +1,174 @@
+# ============================================================================
+# Deploy Merch Performance via DCM Projects
+# ============================================================================
+# Two corrections to the CI/CD pattern in the February best-practices guide,
+# both of which matter in production:
+#
+# 1. AUTHENTICATION. That guide stored a password as SNOWCLI_PW. Snowflake's
+#    CI/CD guidance explicitly says password authentication is supported for
+#    legacy workflows but is NOT recommended for production. This workflow uses
+#    key-pair authentication instead. Workload identity federation via OIDC is
+#    better still where available, because it removes the stored secret
+#    entirely.
+#
+# 2. NO BARE `--replace`. That guide ran `snow streamlit deploy --replace`.
+#    --replace performs a create-or-replace, which CAN DROP THE GRANTS on the
+#    app. For a production app with a carefully managed viewer role that
+#    silently revokes business users' access. DCM's plan/deploy reconciles the
+#    object instead, and keeps the grants declared in access.sql as part of the
+#    same managed unit.
+#
+# The PLAN step runs on every pull request so reviewers can see the changeset
+# before it is applied. DEPLOY runs only on the protected branch.
+# ============================================================================
+
+name: Deploy Merch Performance
+
+on:
+  pull_request:
+    paths:
+      - 'demo_app/**'
+  push:
+    branches: [main]
+    paths:
+      - 'demo_app/**'
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # --------------------------------------------------------------------------
+  # PLAN — on pull requests. Never mutates anything.
+  # --------------------------------------------------------------------------
+  plan:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Snowflake CLI
+        # container runtime support requires 3.14.0+
+        run: pip install 'snowflake-cli>=3.14.0'
+
+      - name: Configure key-pair authentication
+        env:
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.snowflake
+          printf '%s' "$SNOWFLAKE_PRIVATE_KEY" > ~/.snowflake/rsa_key.p8
+          chmod 600 ~/.snowflake/rsa_key.p8
+
+      - name: Clean stray bytecode before packaging assets
+        # The asset glob must be ** to preserve the utils/ package structure,
+        # and ** has no negation, so __pycache__ would otherwise be deployed.
+        run: find . -name '__pycache__' -type d -prune -exec rm -rf {} + || true
+
+      - name: DCM plan
+        working-directory: demo_app
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_DEPLOY_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT
+          SNOWFLAKE_PRIVATE_KEY_PATH: /home/runner/.snowflake/rsa_key.p8
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          snow dcm plan --target dev --save-output
+
+      - name: Publish the changeset for review
+        working-directory: demo_app
+        run: |
+          {
+            echo '## DCM plan — DEV'
+            echo '```'
+            cat out/plan_results.json 2>/dev/null || echo 'no plan output produced'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # --------------------------------------------------------------------------
+  # DEPLOY — on merge to main. Gated by the GitHub environment.
+  # --------------------------------------------------------------------------
+  deploy:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # Configure required reviewers on this environment in repo settings. That
+    # is the approval gate; this workflow deliberately does not implement its
+    # own.
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Snowflake CLI
+        run: pip install 'snowflake-cli>=3.14.0'
+
+      - name: Configure key-pair authentication
+        env:
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.snowflake
+          printf '%s' "$SNOWFLAKE_PRIVATE_KEY" > ~/.snowflake/rsa_key.p8
+          chmod 600 ~/.snowflake/rsa_key.p8
+
+      - name: Clean stray bytecode before packaging assets
+        run: find . -name '__pycache__' -type d -prune -exec rm -rf {} + || true
+
+      - name: DCM deploy
+        working-directory: demo_app
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_DEPLOY_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT
+          SNOWFLAKE_PRIVATE_KEY_PATH: /home/runner/.snowflake/rsa_key.p8
+          PYTHONDONTWRITEBYTECODE: '1'
+        # The prod target's project_owner IS the functional app owner role.
+        # Streamlit ownership cannot be transferred after creation, so the
+        # deploying role permanently becomes the role the app runs as.
+        run: |
+          snow dcm deploy --target prod --alias "${GITHUB_SHA::12}"
+
+      # The provenance check. If the deployed object carries no commit hash,
+      # the deployment did not come from the repository and the app must not be
+      # treated as certified. Failing here keeps the catalog honest.
+      - name: Verify Git provenance landed
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_DEPLOY_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT
+          SNOWFLAKE_PRIVATE_KEY_PATH: /home/runner/.snowflake/rsa_key.p8
+        run: |
+          snow sql -q "DESCRIBE STREAMLIT FANATICS_MERCH.SERVE.MERCH_PERFORMANCE" \
+            --format json > describe.json
+          python - <<'PY'
+          import json, sys
+          rows = json.load(open("describe.json"))
+          row = rows[0] if isinstance(rows, list) else rows
+          commit = row.get("default_version_git_commit_hash")
+          if not commit:
+              sys.exit("FAIL: no git_commit_hash on the deployed app. "
+                       "Not eligible for CERTIFIED tier.")
+          print(f"OK: deployed app traces to commit {commit}")
+          PY
+
+      - name: Refresh the governance inventory
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_DEPLOY_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT
+          SNOWFLAKE_PRIVATE_KEY_PATH: /home/runner/.snowflake/rsa_key.p8
+        run: snow sql -q "CALL GOVERNANCE.APPS.SP_AUDIT_STREAMLIT_APPS()"

@@ -1,0 +1,40 @@
+# ============================================================================
+# Dependencies for the CONTAINER runtime
+# ============================================================================
+# WHY THIS FILE AND NOT environment.yml
+# This project originally shipped an environment.yml pinning streamlit=1.52.2.
+# It was SILENTLY IGNORED. DCM's DEFINE STREAMLIT defaulted the app to the
+# container runtime, and environment.yml is the WAREHOUSE-runtime format.
+# Nothing failed -- the app deployed and ran on whatever versions the runtime
+# chose. The file was present, correctly written, committed and reviewed, and
+# had no effect.
+#
+#   warehouse runtime  ->  environment.yml   (Anaconda channel)
+#   container runtime  ->  requirements.txt or pyproject.toml   (PyPI)
+#
+# HOW TO ACTUALLY VERIFY THE PIN TOOK EFFECT
+# Do NOT rely on the user_packages column of DESCRIBE STREAMLIT. Measured:
+# user_packages is populated for WAREHOUSE-runtime apps but comes back EMPTY for
+# container-runtime apps even when requirements.txt is present and correct. It
+# is not a usable check here, and reading it would tell you the pin failed when
+# it did not.
+#
+# Verify instead by reporting the resolved versions from inside the app. The
+# sidebar of streamlit_app.py prints streamlit.__version__ at runtime, which is
+# the only self-evidencing check: what the app reports is by definition what it
+# is running. Cross-check runtime_name with DESCRIBE STREAMLIT to confirm which
+# dependency format is even being read:
+#
+#     DESCRIBE STREAMLIT <db>.<schema>.<app>;
+#     -- runtime_name empty                        -> warehouse, environment.yml
+#     -- runtime_name SYSTEM$ST_CONTAINER_RUNTIME  -> container, requirements.txt
+#
+# EXACT PINS, NOT RANGES, on either runtime. Range pins such as
+# streamlit>=1.39.0 do not reliably take effect (SNOW-3601653). The audit of
+# this account found 80 of 80 apps with no exact pin, and unpinned versions are
+# the class of problem behind the filter-state bug on the Fanatics app in
+# September, which reproduced on deployed SiS but not on local Streamlit 1.50.
+# ============================================================================
+streamlit==1.52.2
+pandas==2.2.3
+plotly==5.24.1

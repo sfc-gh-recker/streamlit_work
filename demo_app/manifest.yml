@@ -1,0 +1,114 @@
+# ============================================================================
+# DCM Project Manifest — Fanatics Merch Performance Dashboard
+# ============================================================================
+# This project deploys a Streamlit app AND the tables it reads AND the roles
+# and grants that govern it as a single versioned unit. That is the point:
+# promoting a dashboard should promote the data contract underneath it, not
+# just the Python file.
+#
+# Usage:
+#   snow dcm create --target dev          # once, creates the project object
+#   snow dcm plan   --target dev --save-output
+#   snow dcm deploy --target dev
+# ============================================================================
+
+manifest_version: 2
+
+type: DCM_PROJECT
+
+default_target: dev
+
+# ----------------------------------------------------------------------------
+# Deployment targets
+# ----------------------------------------------------------------------------
+# One definition set, three environments. Each target maps to its own DCM
+# project OBJECT -- that is required, because a single project object can only
+# have one configuration deployed at a time. Sharing a project object across
+# environments would make deploying PROD drop all the DEV objects.
+targets:
+  dev:
+    account_identifier: SFSENORTHAMERICA-DEMO_RECKER
+    project_name: GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_DEV
+    # Using ACCOUNTADMIN here only because this is a demo account where it is
+    # the available role. For a real deployment this should be a dedicated
+    # deployer role -- see the prod target below. Snowflake's own CI/CD guidance
+    # is explicit that general administrator roles should not own DCM projects.
+    project_owner: ACCOUNTADMIN
+    templating_config: DEV
+
+  test:
+    account_identifier: SFSENORTHAMERICA-DEMO_RECKER
+    project_name: GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_TEST
+    project_owner: ACCOUNTADMIN
+    templating_config: TEST
+
+  prod:
+    account_identifier: SFSENORTHAMERICA-DEMO_RECKER
+    project_name: GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_PROD
+    # This is the pattern to follow. A dedicated role, granted only to the CI/CD
+    # service user and never to individual developers, with exactly the
+    # privileges needed to deploy this project and no more. That is what stops
+    # an accidental local `snow dcm deploy` from reaching production.
+    project_owner: APP_DEPLOYER_PROD
+    templating_config: PROD
+
+# ----------------------------------------------------------------------------
+# Project assets
+# ----------------------------------------------------------------------------
+# DEFINE STREAMLIT can ONLY reference files through an asset:// URI -- a
+# relative path in the FROM clause fails at compile time.
+#
+# WHY THIS IS A ** GLOB AND NOT AN EXPLICIT FILE LIST.
+# Both were tested. The rule that decides it: "the literal directory prefix
+# before the first wildcard is removed" when files are materialized.
+#
+#   'streamlit/merch_performance/utils/config.py'  (explicit, no wildcard)
+#       -> materializes as  config.py         <-- utils/ package is FLATTENED
+#       -> `from utils.config import ...` then fails at runtime
+#
+#   'streamlit/merch_performance/utils/*.py'       (wildcard after utils/)
+#       -> also flattens, for the same reason
+#
+#   'streamlit/merch_performance/**/*'             (wildcard before utils/)
+#       -> materializes as  utils/config.py   <-- structure PRESERVED
+#
+# So any app with a Python package subdirectory requires the ** form. Verify
+# after every plan with:  find out/rendered/assets -type f
+#
+# THE COST, AND THE MITIGATION.
+# A ** glob sweeps in whatever is on disk. Verified: a local
+# `python -m py_compile` created __pycache__/*.pyc files and the glob deployed
+# them. DCM excludes dotfiles and dot-directories silently, but __pycache__ is
+# neither, so nothing warns you. Globs support only * and ** -- there is no
+# negation -- so the manifest cannot exclude it.
+#
+# Mitigation is therefore hygiene outside the manifest:
+#   * set PYTHONDONTWRITEBYTECODE=1, or use `python -m compileall -q` outside
+#     the project, or validate syntax with ast.parse instead of py_compile
+#   * clean before deploying:  find . -name __pycache__ -type d -exec rm -rf {} +
+#     (the CI workflow does this explicitly before plan/deploy)
+assets:
+  merch_performance:
+    path: 'streamlit/merch_performance/**/*'
+
+# ----------------------------------------------------------------------------
+# Templating
+# ----------------------------------------------------------------------------
+# IMPORTANT: these variables are available in the DEFINE statements ONLY. They
+# are NOT passed through to the Streamlit Python files. The app infers its own
+# environment at runtime via CURRENT_DATABASE() -- see
+# streamlit/merch_performance/utils/config.py for why that matters.
+templating:
+  defaults:
+    warehouse: 'SNOW_INTELLIGENCE_DEMO_WH'
+
+  configurations:
+    DEV:
+      env_suffix: '_DEV'
+
+    TEST:
+      env_suffix: '_TEST'
+
+    PROD:
+      # Empty string, not absent: PROD objects carry no suffix.
+      env_suffix: ''

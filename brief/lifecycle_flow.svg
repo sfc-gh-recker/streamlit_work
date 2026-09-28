@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="700" viewBox="0 0 1400 700" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <rect width="1400" height="700" fill="#FFFFFF"/>
+
+  <text x="700" y="40" text-anchor="middle" font-size="22" font-weight="700" fill="#0D2B45">Streamlit Development &amp; Management — Recommended Pattern</text>
+  <text x="700" y="64" text-anchor="middle" font-size="13" fill="#475569">Git commit provenance is the promotion gate and the support boundary</text>
+
+  <!-- TIER 1 -->
+  <rect x="60" y="110" width="330" height="300" rx="10" fill="#F1F5F9" stroke="#94A3B8" stroke-dasharray="6 4"/>
+  <text x="225" y="138" text-anchor="middle" font-size="14" font-weight="700" fill="#475569">TIER 1 — EXPLORE</text>
+  <rect x="90" y="152" width="270" height="46" rx="8" fill="#FFFFFF" stroke="#94A3B8"/>
+  <text x="225" y="171" text-anchor="middle" font-size="12" fill="#1E293B">Personal workspace</text>
+  <text x="225" y="187" text-anchor="middle" font-size="12" fill="#1E293B">private editing</text>
+  <rect x="90" y="206" width="270" height="32" rx="8" fill="#FFFFFF" stroke="#94A3B8"/>
+  <text x="225" y="226" text-anchor="middle" font-size="11" font-family="'SF Mono',Consolas,monospace" fill="#1E293B">USER$&lt;name&gt; or DEV_SANDBOX</text>
+  <text x="98" y="262" font-size="11" fill="#475569">Owner: individual user</text>
+  <text x="98" y="278" font-size="11" fill="#475569">Source: whatever is in the workspace</text>
+  <text x="98" y="294" font-size="11" fill="#475569">git_commit_hash: absent</text>
+  <text x="98" y="310" font-size="11" fill="#475569">Not in catalog</text>
+  <rect x="90" y="318" width="270" height="30" rx="8" fill="#FEF2F2" stroke="#EF4444"/>
+  <text x="225" y="338" text-anchor="middle" font-size="11" font-weight="700" fill="#991B1B">DE DOES NOT SUPPORT</text>
+  <text x="225" y="366" text-anchor="middle" font-size="10" font-style="italic" fill="#94A3B8">Owner fixes it or deletes it</text>
+
+  <!-- TIER 2 -->
+  <rect x="470" y="110" width="330" height="300" rx="10" fill="#EFF6FF" stroke="#29B5E8" stroke-dasharray="6 4"/>
+  <text x="635" y="138" text-anchor="middle" font-size="14" font-weight="700" fill="#11567F">TIER 2 — TEAM</text>
+  <rect x="500" y="152" width="270" height="46" rx="8" fill="#FFFFFF" stroke="#29B5E8"/>
+  <text x="635" y="171" text-anchor="middle" font-size="12" fill="#1E293B">Git-backed workspace</text>
+  <text x="635" y="187" text-anchor="middle" font-size="12" fill="#1E293B">feature branch + PR review</text>
+  <rect x="500" y="206" width="270" height="32" rx="8" fill="#FFFFFF" stroke="#29B5E8"/>
+  <text x="635" y="226" text-anchor="middle" font-size="11" font-family="'SF Mono',Consolas,monospace" fill="#1E293B">snow streamlit deploy</text>
+  <text x="508" y="262" font-size="11" fill="#475569">Owner: named team owner role</text>
+  <text x="508" y="278" font-size="11" fill="#475569">Source: feature branch</text>
+  <text x="508" y="294" font-size="11" fill="#475569">git_commit_hash: present</text>
+  <text x="508" y="310" font-size="11" fill="#475569">Not in catalog</text>
+  <rect x="500" y="318" width="270" height="30" rx="8" fill="#FEF2F2" stroke="#EF4444"/>
+  <text x="635" y="338" text-anchor="middle" font-size="11" font-weight="700" fill="#991B1B">DE DOES NOT SUPPORT</text>
+  <text x="635" y="366" text-anchor="middle" font-size="10" font-style="italic" fill="#94A3B8">The owning team fixes it</text>
+
+  <!-- TIER 3 -->
+  <rect x="880" y="110" width="330" height="300" rx="10" fill="#ECFDF5" stroke="#10B981" stroke-width="2"/>
+  <text x="1045" y="138" text-anchor="middle" font-size="14" font-weight="700" fill="#065F46">TIER 3 — CERTIFIED</text>
+  <rect x="910" y="152" width="270" height="46" rx="8" fill="#FFFFFF" stroke="#10B981"/>
+  <text x="1045" y="171" text-anchor="middle" font-size="12" fill="#1E293B">DCM project deployed</text>
+  <text x="1045" y="187" text-anchor="middle" font-size="12" fill="#1E293B">from an immutable Git tag</text>
+  <rect x="910" y="206" width="270" height="32" rx="8" fill="#FFFFFF" stroke="#10B981"/>
+  <text x="1045" y="226" text-anchor="middle" font-size="10" font-family="'SF Mono',Consolas,monospace" fill="#1E293B">DEFINE STREAMLIT + tables + grants</text>
+  <text x="918" y="262" font-size="11" fill="#475569">Owner: functional role, never a person</text>
+  <text x="918" y="278" font-size="11" fill="#475569">Source: immutable Git tag</text>
+  <text x="918" y="294" font-size="11" fill="#475569">git_commit_hash: matches the tag</text>
+  <text x="918" y="310" font-size="11" font-weight="700" fill="#065F46">IN CATALOG</text>
+  <rect x="910" y="318" width="270" height="30" rx="8" fill="#D1FAE5" stroke="#10B981"/>
+  <text x="1045" y="338" text-anchor="middle" font-size="11" font-weight="700" fill="#065F46">DE SUPPORTS — ON CALL</text>
+  <text x="1045" y="366" text-anchor="middle" font-size="10" font-style="italic" fill="#94A3B8">Incident, on-call, rollback to prior version</text>
+
+  <defs>
+    <marker id="arrowGray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/></marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#10B981"/></marker>
+    <marker id="arrowPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#8B5CF6"/></marker>
+  </defs>
+
+  <line x1="390" y1="260" x2="466" y2="260" stroke="#475569" stroke-width="2" marker-end="url(#arrowGray)"/>
+  <text x="428" y="238" text-anchor="middle" font-size="11" font-weight="700" fill="#475569">promote:</text>
+  <text x="428" y="251" text-anchor="middle" font-size="11" font-weight="700" fill="#475569">open a PR</text>
+
+  <line x1="800" y1="260" x2="876" y2="260" stroke="#10B981" stroke-width="3" marker-end="url(#arrowGreen)"/>
+  <rect x="792" y="222" width="96" height="26" rx="6" fill="#FFFBEB" stroke="#F59E0B" stroke-width="2"/>
+  <text x="840" y="239" text-anchor="middle" font-size="11" font-weight="700" fill="#92400E">THE GATE</text>
+
+  <!-- PREREQUISITE -->
+  <rect x="60" y="440" width="330" height="160" rx="10" fill="#FEF2F2" stroke="#EF4444" stroke-width="2"/>
+  <text x="76" y="466" font-size="12" font-weight="700" fill="#991B1B">PREREQUISITE</text>
+  <text x="76" y="492" font-size="11" fill="#991B1B">60 of 80 apps audited are on the legacy</text>
+  <text x="76" y="508" font-size="11" font-family="'SF Mono',Consolas,monospace" fill="#991B1B">ROOT_LOCATION<tspan font-family="-apple-system, sans-serif"> source model.</tspan></text>
+  <text x="76" y="532" font-size="11" fill="#991B1B">Those apps cannot use Git integration or</text>
+  <text x="76" y="548" font-size="11" fill="#991B1B">the container runtime at all. They must be</text>
+  <text x="76" y="564" font-size="11" fill="#991B1B">migrated to the FROM source model before</text>
+  <text x="76" y="580" font-size="11" fill="#991B1B">any of the above applies to them.</text>
+
+  <!-- GATE DETAIL -->
+  <rect x="420" y="440" width="640" height="160" rx="10" fill="#FFFBEB" stroke="#F59E0B" stroke-width="2"/>
+  <text x="740" y="466" text-anchor="middle" font-size="13" font-weight="700" fill="#92400E">The promotion gate is a column value, not a judgement call</text>
+  <rect x="440" y="478" width="600" height="76" rx="6" fill="#1E293B"/>
+  <text x="452" y="500" font-size="11" font-family="'SF Mono',Consolas,monospace" fill="#93C5FD">SELECT<tspan fill="#E2E8F0"> full_name, tier, git_commit_hash</tspan></text>
+  <text x="452" y="516" font-size="11" font-family="'SF Mono',Consolas,monospace" fill="#93C5FD">  FROM<tspan fill="#E2E8F0"> GOVERNANCE.APPS.V_STREAMLIT_INVENTORY_LATEST</tspan></text>
+  <text x="452" y="532" font-size="11" font-family="'SF Mono',Consolas,monospace" fill="#93C5FD"> WHERE<tspan fill="#E2E8F0"> git_commit_hash </tspan><tspan fill="#93C5FD">IS NULL</tspan><tspan fill="#E2E8F0">;</tspan></text>
+  <text x="452" y="548" font-size="11" font-family="'SF Mono',Consolas,monospace" fill="#6B7280">-- everything returned here is the owner's problem</text>
+  <text x="740" y="572" text-anchor="middle" font-size="10" font-style="italic" fill="#92400E">Nobody types the hash in. The deployment mechanism writes it, so an app that</text>
+  <text x="740" y="586" text-anchor="middle" font-size="10" font-style="italic" fill="#92400E">did not come from a repository cannot produce one.</text>
+
+  <!-- CATALOG -->
+  <rect x="1090" y="440" width="220" height="160" rx="10" fill="#F0F4FF" stroke="#8B5CF6" stroke-width="2"/>
+  <text x="1200" y="500" text-anchor="middle" font-size="12" font-weight="700" fill="#4C1D95">CATALOG PORTAL</text>
+  <text x="1200" y="526" text-anchor="middle" font-size="11" fill="#4C1D95">certified apps only</text>
+  <text x="1200" y="544" text-anchor="middle" font-size="11" fill="#4C1D95">per-persona views</text>
+  <polyline points="1128,410 1128,425 1200,425 1200,436" fill="none" stroke="#8B5CF6" stroke-width="2" marker-end="url(#arrowPurple)"/>
+
+  <text x="700" y="638" text-anchor="middle" font-size="11" font-style="italic" fill="#475569">Streamlit apps run with OWNER'S RIGHTS. The owner role decides what every viewer can reach — which is why a production app</text>
+  <text x="700" y="656" text-anchor="middle" font-size="11" font-style="italic" fill="#475569">must never be owned by an individual, or by ACCOUNTADMIN. 64 of the 80 apps audited are owned by an admin role.</text>
+</svg>
