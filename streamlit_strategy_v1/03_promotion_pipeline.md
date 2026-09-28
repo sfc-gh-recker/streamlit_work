@@ -191,7 +191,42 @@ DCM deployment history gives the audit trail:
 SHOW DEPLOYMENTS IN DCM PROJECT GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_PROD;
 ```
 
-The `alias` is worth setting to the commit SHA — it is effectively the commit message for the deployment. Note the deployment row also has its own `git_commit_hash` column, populated when the project itself is deployed *from* a Snowflake Git repository stage.
+The `alias` is worth setting to the commit SHA or release tag — it is effectively
+the commit message for the deployment, and it is the field a human reads first.
+
+**Do not rely on the `git_commit_hash` column of this output.** It is documented
+as recording "the Git commit hash … from which the DCM project originates," but
+verified against 10.34.101 it is empty for every `EXECUTE DCM PROJECT … FROM
+'@git_repo/…'` deployment — including deployments made from a fully pinned
+`commits/<sha>/` path. The only Git evidence DCM retains is the literal
+`source_file_path` string.
+
+That turns the `FROM` path into a governance decision rather than a matter of
+taste:
+
+| `FROM` path | Recorded in `source_file_path` | Auditable to a commit? |
+|---|---|---|
+| `@repo/commits/<sha>/` | the full 40-char SHA | yes, directly |
+| `@repo/tags/<tag>/` | the tag name | yes, via `SHOW GIT TAGS` |
+| `@repo/branches/<branch>/` | the branch name | **no** — a moving pointer |
+| a local directory (`snow dcm deploy`) | a temp stage name | no Git trace at all |
+
+Deploy production from a tag or a commit. A branch-path deployment is still
+reviewed and reproducible in the sense that it went through the pipeline, but six
+months later nothing in the account can tell you which commit is serving traffic.
+The audit reports that state as `IS_UNPINNED_SOURCE` — governed, but not
+traceable.
+
+Resolving a tag back to its commit:
+
+```sql
+SHOW GIT TAGS LIKE 'v0.1.0' IN GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO;
+-- name    path           commit_hash
+-- v0.1.0  /tags/v0.1.0   1628c7bfca13f970aca0c9e53de3a50070de6ee3
+```
+
+Resolve it live rather than treating the tag name as the identifier: a tag can be
+force-moved, so the name alone is a claim, not evidence.
 
 ## 8. CI/CD
 

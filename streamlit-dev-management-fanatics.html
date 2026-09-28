@@ -207,7 +207,7 @@ default_version_git_commit_hash      15e3e34e80cdc1e8d64b34a1d0b8ad206d002c1b</c
       <thead><tr><th>Path</th><th><code>source_location_uri</code></th><th><code>git_commit_hash</code></th><th>Where the evidence lives</th></tr></thead>
       <tbody>
         <tr><td><code>CREATE STREAMLIT FROM @git_repo/…</code></td><td>Git stage path</td><td><strong>populated</strong></td><td>The app object</td></tr>
-        <tr><td>DCM <code>DEFINE STREAMLIT FROM 'asset://…'</code></td><td><code>asset://&lt;name&gt;</code></td><td><em>empty</em></td><td><code>SHOW DEPLOYMENTS IN DCM PROJECT</code></td></tr>
+        <tr><td>DCM <code>DEFINE STREAMLIT FROM 'asset://…'</code></td><td><code>asset://&lt;name&gt;</code></td><td><em>empty</em></td><td><code>SHOW DEPLOYMENTS IN DCM PROJECT</code> &rarr; <code>source_file_path</code></td></tr>
         <tr><td>Clicked together in Snowsight</td><td>internal stage</td><td><em>empty</em></td><td><strong>nowhere</strong></td></tr>
       </tbody>
     </table>
@@ -216,6 +216,33 @@ default_version_git_commit_hash      15e3e34e80cdc1e8d64b34a1d0b8ad206d002c1b</c
     A DCM-deployed app has no commit hash on the object, yet it is the most governed kind of app in
     the estate: reviewed, CI/CD-deployed, reproducible. An audit keyed only on the hash reports it
     as ungoverned. <strong>Accept either form of evidence.</strong>
+  </p>
+  <p>
+    Two further behaviours were verified directly against the account rather than taken from the
+    documentation, and both change how you deploy:
+  </p>
+  <ul>
+    <li>
+      The <code>git_commit_hash</code> column of <code>SHOW DEPLOYMENTS IN DCM PROJECT</code>
+      <strong>never populates</strong>, not even when deploying from a fully pinned
+      <code>commits/&lt;sha&gt;/</code> path. The only Git evidence DCM keeps is the literal
+      <code>source_file_path</code>. So deploy from <code>tags/&lt;tag&gt;/</code> or
+      <code>commits/&lt;sha&gt;/</code> &mdash; a <code>branches/</code> path records a moving
+      pointer, and nothing in the account will later tell you which commit shipped.
+    </li>
+    <li>
+      <code>CREATE STREAMLIT&nbsp;&hellip;&nbsp;FROM</code> and
+      <code>ALTER STREAMLIT&nbsp;&hellip;&nbsp;ADD VERSION FROM</code> accept
+      <strong>only</strong> <code>branches/</code> paths; they reject
+      <code>tags/</code> and <code>commits/</code> with <em>Invalid git branch path</em>.
+      Auditability survives regardless, because the branch is resolved to a concrete SHA and
+      frozen onto the version at add time. But it means <strong>tag-pinned releases have to go
+      through DCM</strong>.
+    </li>
+  </ul>
+  <p>
+    The two mechanisms therefore have opposite requirements. Getting it backwards either hard-fails
+    (Streamlit) or silently costs you auditability (DCM).
   </p>
 </div>
 

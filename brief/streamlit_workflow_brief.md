@@ -83,10 +83,23 @@ flowchart LR
 | Owner | Individual | Named team owner role | **Functional owner role, never a person** |
 | Source of truth | Whatever is in the workspace | Feature branch | Immutable Git tag |
 | Deployed by | The user | `snow streamlit deploy` | DCM project via CI/CD identity |
-| `git_commit_hash` | absent | present | present, matches a tag |
+| `git_commit_hash` | absent | present on the app object | *empty on the object* — the tag is recorded in DCM deployment history |
 | In the catalog | no | no | **yes** |
 | **DE supports it** | **no** | **no** | **yes** |
 | When it breaks | Owner fixes or deletes | Team fixes | Incident, on-call, rollback |
+
+One counterintuitive detail in the Certified column, verified in the account
+rather than read from the docs: a DCM-deployed app carries **no** commit hash on
+the Streamlit object — `source_location_uri` reads `asset://…`. Its provenance
+lives in `SHOW DEPLOYMENTS IN DCM PROJECT`, in the `source_file_path` of the
+latest deployment. So the audit has to accept two different kinds of evidence, and
+an audit keyed only on the app object would report the most governed app in the
+estate as ungoverned.
+
+This is also why the Certified tier is defined as tag-deployed *via DCM* rather
+than tag-deployed generally: `CREATE STREAMLIT` and `ALTER STREAMLIT … ADD VERSION`
+reject `tags/` and `commits/` paths outright and accept only `branches/`. DCM is
+the only mechanism that will deploy from an immutable tag.
 
 Never make an individual the long-term owner of a production app. Streamlit apps run with **owner's rights** by default, so the owner role determines what every viewer can reach. An app owned by `ACCOUNTADMIN` hands admin-level data access to everyone who can open it — which is what 64 of the 80 apps above currently do.
 

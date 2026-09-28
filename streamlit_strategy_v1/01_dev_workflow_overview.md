@@ -29,8 +29,8 @@ This is the part that is easy to get wrong. There are two legitimate deployment 
 
 | Path | `source_location_uri` | `git_commit_hash` on app | Where the evidence lives |
 |---|---|---|---|
-| `CREATE STREAMLIT FROM @git_repo/branches/…` | Git stage path | **populated** | The app object |
-| DCM `DEFINE STREAMLIT FROM 'asset://…'` | `asset://<name>` | *empty* | `SHOW DEPLOYMENTS IN DCM PROJECT` |
+| `CREATE STREAMLIT FROM @git_repo/branches/…` | Git stage path | **populated** | The app object, and `SHOW VERSIONS IN STREAMLIT` per version |
+| DCM `DEFINE STREAMLIT FROM 'asset://…'` | `asset://<name>` | *empty* | `SHOW DEPLOYMENTS IN DCM PROJECT` → `source_file_path` |
 | Snowsight | internal stage | *empty* | nowhere |
 
 A DCM-deployed app has no commit hash on the object, yet it is the most governed kind of app in the estate: reviewed, CI/CD-deployed, reproducible, with full deployment history. An audit keyed only on `git_commit_hash` reports it as ungoverned — a false positive on your best work.
@@ -44,6 +44,37 @@ OR managed by a DCM project      -- deployed through a reviewed CI/CD pipeline
 ```
 
 Everything else is a side project.
+
+### Governed is not the same as traceable
+
+For the DCM path, `SHOW DEPLOYMENTS` records the literal `FROM` path and nothing
+else — its documented `git_commit_hash` column does not populate in practice. So
+whether a DCM-deployed app can be traced to a commit depends entirely on the path
+you deployed from: `commits/<sha>/` and `tags/<tag>/` are recoverable,
+`branches/<branch>/` is not. The audit separates these as `DCM_SOURCE_REF`
+(`COMMIT` / `TAG` / `BRANCH`) and flags the last as `IS_UNPINNED_SOURCE`.
+
+### The mechanism inversion
+
+The two deployment mechanisms accept **different** Git path forms, and they are
+opposites. This is worth knowing before you write the pipeline, because one
+direction hard-fails and the other quietly loses auditability:
+
+| Mechanism | `branches/` | `commits/` | `tags/` |
+|---|---|---|---|
+| `EXECUTE DCM PROJECT … FROM` | yes | yes | yes |
+| `CREATE STREAMLIT … FROM` | yes | rejected | rejected |
+| `ALTER STREAMLIT … ADD VERSION FROM` | yes | rejected | rejected |
+
+Both Streamlit forms reject a `commits/` or `tags/` path at any depth with
+`Invalid git branch path`, even though `ALTER STREAMLIT` documents
+`FROM { <snowgit_tag_uri> | <snowgit_commit_uri> }`. Auditability survives anyway,
+because a branch path is resolved to a concrete SHA and **frozen onto the version**
+at add time — the app does not follow the branch afterwards.
+
+The consequence that matters for the Certified tier: **if a release must be pinned
+to an immutable tag, that app has to go through DCM.** Tag-pinned deployment is
+not reachable from `CREATE STREAMLIT` or `ADD VERSION`.
 
 ## 3. The three-tier model
 
