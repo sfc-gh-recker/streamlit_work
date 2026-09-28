@@ -19,3 +19,6 @@ venv/
 
 # Cortex Code plans (local working notes)
 .snowflake/cortex/plans/
+
+# Snowflake CLI build bundle
+output/
