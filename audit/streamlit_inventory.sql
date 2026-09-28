@@ -30,8 +30,10 @@
 --                                                CI/CD, reviewed, reproducible
 --
 --   3. DCM deployed FROM a Snowflake Git repository stage
---        git_commit_hash on the STREAMLIT is empty, but
---        SHOW DEPLOYMENTS IN DCM PROJECT exposes its own git_commit_hash column
+--        git_commit_hash on the STREAMLIT is empty, AND -- verified 2026-09-28 --
+--        the documented git_commit_hash column of SHOW DEPLOYMENTS IN DCM PROJECT
+--        is ALSO empty, even when deploying FROM '@repo/commits/<sha>/...'.
+--        The only Git evidence DCM retains is the literal source_file_path string.
 --
 -- So an audit keyed only on the Streamlit object's commit hash reports a
 -- fully CI/CD-managed DCM app as ungoverned -- a false positive on the most
@@ -42,6 +44,20 @@
 --
 -- The audit therefore cross-references SHOW ENTITIES IN DCM PROJECT. An app
 -- that has neither is genuinely ungoverned: someone clicked in Snowsight.
+--
+-- Provenance and auditability are not the same thing, and that distinction
+-- drives one deployment rule:
+--
+--   Deploy DCM projects FROM '@repo/commits/<sha>/', never '@repo/branches/<br>/'.
+--
+-- A branch path records a moving pointer, so six months later nothing in the
+-- account can tell you which commit is actually running. A commit path embeds
+-- the immutable sha in source_file_path, which the audit recovers into
+-- DCM_SOURCE_SHA. IS_UNPINNED_SOURCE flags the governed-but-untraceable case.
+--
+-- Note the asymmetry: CREATE STREAMLIT FROM resolves a *branch* path to a
+-- concrete sha and pins it on the object at create time, so for path 1 a branch
+-- path is safe. Do not generalize either behaviour to the other.
 --
 -- Run as a role that can see all databases (ACCOUNTADMIN or an audit role
 -- with IMPORTED PRIVILEGES / object discovery across the account).
@@ -78,7 +94,10 @@ CREATE TABLE IF NOT EXISTS GOVERNANCE.APPS.STREAMLIT_INVENTORY (
     SOURCE_LOCATION_URI     VARCHAR,
     GIT_BRANCH              VARCHAR,
     DCM_PROJECT             VARCHAR,   -- DCM project managing this app, if any
+    DCM_SOURCE_PATH         VARCHAR,   -- latest deployment's FROM path
+    DCM_SOURCE_SHA          VARCHAR,   -- commit recovered from that path, if pinned
     PROVENANCE              VARCHAR,   -- GIT_DIRECT | DCM_MANAGED | NONE
+    COMMIT_SHA              VARCHAR,   -- effective commit from EITHER path
 
     -- source model / runtime
     SOURCE_MODEL            VARCHAR,   -- FROM | ROOT_LOCATION (legacy) | UNKNOWN
@@ -98,6 +117,7 @@ CREATE TABLE IF NOT EXISTS GOVERNANCE.APPS.STREAMLIT_INVENTORY (
     IS_DUPLICATE            BOOLEAN,   -- "Copy of" / "Backup of" / "Duplicated from"
     IS_SCRATCH              BOOLEAN,   -- test/debug/minimal naming
     IS_UNPINNED             BOOLEAN,   -- no exact streamlit== pin
+    IS_UNPINNED_SOURCE      BOOLEAN,   -- governed, but not traceable to one commit
     AGE_DAYS                NUMBER,
 
     TIER                    VARCHAR,   -- CERTIFIED | TEAM | EXPLORE | REMEDIATE
@@ -154,6 +174,8 @@ DECLARE
     v_desc          VARIANT;
     v_err           VARCHAR;
     v_proj          VARCHAR;
+    v_dcm_src       VARCHAR;
+    v_dcm_sha       VARCHAR;
 BEGIN
     run_ts := CURRENT_TIMESTAMP();
 
@@ -185,9 +207,20 @@ BEGIN
     --
     -- SHOW ENTITIES IN DCM PROJECT is per-project, so walk the projects and
     -- union their managed Streamlit objects.
+    --
+    -- We also capture the latest deployment's source path, because that string
+    -- is the ONLY place DCM retains Git evidence. Verified 2026-09-28: the
+    -- documented `git_commit_hash` column of SHOW DEPLOYMENTS IN DCM PROJECT is
+    -- empty even when deploying FROM '@repo/commits/<sha>/...'. So a DCM project
+    -- deployed from a BRANCH path (@repo/branches/main/) is not auditable to a
+    -- commit -- a branch is a moving pointer. Deployed from a COMMIT path
+    -- (@repo/commits/<sha>/) the sha is embedded in source_file_path and can be
+    -- recovered. DCM_SOURCE_PINNED is what separates the two.
     CREATE OR REPLACE TEMPORARY TABLE GOVERNANCE.APPS._AUDIT_DCM_APPS (
-        FULL_NAME    VARCHAR,
-        DCM_PROJECT  VARCHAR
+        FULL_NAME       VARCHAR,
+        DCM_PROJECT     VARCHAR,
+        DCM_SOURCE_PATH VARCHAR,
+        DCM_SOURCE_SHA  VARCHAR
     );
 
     SHOW DCM PROJECTS IN ACCOUNT;
@@ -200,12 +233,33 @@ BEGIN
         SELECT project_fqn FROM GOVERNANCE.APPS._AUDIT_DCM_PROJECTS;
 
     FOR p IN proj_cur DO
-        v_proj := p.project_fqn;
+        v_proj    := p.project_fqn;
+        v_dcm_src := NULL;
+        v_dcm_sha := NULL;
+
+        -- Latest deployment. SHOW DEPLOYMENTS returns newest first, so LIMIT 1
+        -- is the current source of record. A project with no deployments yet
+        -- raises on SELECT INTO, which the handler absorbs.
+        BEGIN
+            EXECUTE IMMEDIATE
+                'SHOW DEPLOYMENTS IN DCM PROJECT ' || v_proj || ' LIMIT 1';
+
+            SELECT "source_file_path",
+                   REGEXP_SUBSTR("source_file_path",
+                                 '/commits/([0-9a-f]{40})/', 1, 1, 'e', 1)
+              INTO v_dcm_src, v_dcm_sha
+              FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+        EXCEPTION
+            WHEN OTHER THEN
+                NULL;
+        END;
+
         BEGIN
             EXECUTE IMMEDIATE 'SHOW ENTITIES IN DCM PROJECT ' || v_proj;
 
-            INSERT INTO GOVERNANCE.APPS._AUDIT_DCM_APPS (FULL_NAME, DCM_PROJECT)
-            SELECT "name", :v_proj
+            INSERT INTO GOVERNANCE.APPS._AUDIT_DCM_APPS
+                   (FULL_NAME, DCM_PROJECT, DCM_SOURCE_PATH, DCM_SOURCE_SHA)
+            SELECT "name", :v_proj, :v_dcm_src, :v_dcm_sha
             FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
             WHERE UPPER("object_type") = 'STREAMLIT';
         EXCEPTION
@@ -256,11 +310,12 @@ BEGIN
             TITLE, COMMENT_TEXT, OWNER_ROLE, OWNER_ROLE_TYPE, QUERY_WAREHOUSE,
             URL_ID, CREATED_ON,
             GIT_COMMIT_HASH, SOURCE_LOCATION_URI, GIT_BRANCH,
-            DCM_PROJECT, PROVENANCE,
+            DCM_PROJECT, DCM_SOURCE_PATH, DCM_SOURCE_SHA, PROVENANCE, COMMIT_SHA,
             SOURCE_MODEL, ROOT_LOCATION, RUNTIME, COMPUTE_POOL, RUNTIME_NAME,
             MAIN_FILE, USER_PACKAGES,
             IS_UNGOVERNED, IS_LEGACY_SOURCE, IS_ADMIN_OWNED, IS_UNNAMED,
-            IS_UNDOCUMENTED, IS_DUPLICATE, IS_SCRATCH, IS_UNPINNED, AGE_DAYS,
+            IS_UNDOCUMENTED, IS_DUPLICATE, IS_SCRATCH, IS_UNPINNED,
+            IS_UNPINNED_SOURCE, AGE_DAYS,
             TIER, FINDINGS, DESCRIBE_ERROR
         )
         SELECT
@@ -280,6 +335,8 @@ BEGIN
             REGEXP_SUBSTR(d.src_uri, '/branches/([^/]+)/', 1, 1, 'e', 1),
 
             dcm.DCM_PROJECT,
+            dcm.DCM_SOURCE_PATH,
+            dcm.DCM_SOURCE_SHA,
             -- Accept EITHER form of provenance. See the header comment: a
             -- DCM-managed app has no commit hash on the object but is fully
             -- governed, so keying only on git_hash misreports it.
@@ -288,6 +345,10 @@ BEGIN
                 WHEN dcm.DCM_PROJECT IS NOT NULL THEN 'DCM_MANAGED'
                 ELSE 'NONE'
             END,
+            -- One column to answer "which commit is running?" regardless of how
+            -- the app got here. NULL for a DCM project deployed from a branch
+            -- path: governed, but the shipped commit is unrecoverable.
+            COALESCE(d.git_hash, dcm.DCM_SOURCE_SHA),
 
             d.source_model,
             d.root_loc,
@@ -317,6 +378,11 @@ BEGIN
             -- exact pin required: range pins silently do not apply on the
             -- warehouse runtime (SNOW-3601653)
             NOT COALESCE(d.user_packages, '') RLIKE 'streamlit==[0-9]',
+            -- governed but not traceable to a single commit: a DCM project
+            -- deployed from a branch path. Governance without auditability.
+            (dcm.DCM_PROJECT IS NOT NULL
+             AND d.git_hash IS NULL
+             AND dcm.DCM_SOURCE_SHA IS NULL),
             DATEDIFF('day', :v_created, :run_ts),
 
             CASE
@@ -348,6 +414,11 @@ BEGIN
                     'duplicate of another app', NULL),
                 IFF(NOT COALESCE(d.user_packages,'') RLIKE 'streamlit==[0-9]',
                     'streamlit version not pinned exactly', NULL),
+                IFF(dcm.DCM_PROJECT IS NOT NULL
+                        AND d.git_hash IS NULL
+                        AND dcm.DCM_SOURCE_SHA IS NULL,
+                    'DCM-managed but deployed from a branch path: '
+                    || 'shipped commit is unrecoverable', NULL),
                 IFF(DATEDIFF('day', :v_created, :run_ts) > 365,
                     'over a year old', NULL)
             )), '; '),
@@ -405,6 +476,9 @@ SELECT
     ROUND(100.0 * COUNT_IF(IS_UNGOVERNED) / COUNT(*), 1)  AS pct_ungoverned,
     COUNT_IF(PROVENANCE = 'GIT_DIRECT')                   AS prov_git_direct,
     COUNT_IF(PROVENANCE = 'DCM_MANAGED')                  AS prov_dcm_managed,
+    -- governed, but the running commit cannot be recovered from the account
+    COUNT_IF(IS_UNPINNED_SOURCE)                          AS governed_not_traceable,
+    COUNT_IF(COMMIT_SHA IS NOT NULL)                      AS traceable_to_commit,
     COUNT_IF(IS_LEGACY_SOURCE)                            AS legacy_source_model,
     COUNT_IF(IS_ADMIN_OWNED)                              AS admin_owned,
     COUNT_IF(IS_UNNAMED)                                  AS never_named,
