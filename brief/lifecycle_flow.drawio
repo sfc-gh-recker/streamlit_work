@@ -1,0 +1,126 @@
+<mxfile host="app.diagrams.net" agent="Cortex Code" version="24.0.0">
+  <diagram id="streamlit-lifecycle" name="Streamlit Lifecycle">
+    <mxGraphModel dx="1600" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="700" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Streamlit Development &amp; Management — Recommended Pattern" style="text;html=1;fontSize=22;fontStyle=1;align=center;fontColor=#0D2B45;" vertex="1" parent="1">
+          <mxGeometry x="330" y="20" width="740" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Git commit provenance is the promotion gate and the support boundary" style="text;html=1;fontSize=13;align=center;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="330" y="50" width="740" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t1box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#94A3B8;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="110" width="330" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="t1title" value="TIER 1 — EXPLORE" style="text;html=1;fontSize=14;fontStyle=1;align=center;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="60" y="122" width="330" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="t1a" value="Personal workspace&#xa;private editing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="90" y="152" width="270" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="t1b" value="USER$&lt;name&gt; or DEV_SANDBOX" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#94A3B8;fontSize=11;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="90" y="206" width="270" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="t1c" value="Owner: individual user&#xa;Source: whatever is in the workspace&#xa;git_commit_hash: absent&#xa;Not in catalog" style="text;html=1;fontSize=11;align=left;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="95" y="246" width="270" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="t1d" value="DE DOES NOT SUPPORT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#EF4444;fontSize=11;fontStyle=1;fontColor=#991B1B;" vertex="1" parent="1">
+          <mxGeometry x="90" y="318" width="270" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t1e" value="Owner fixes it or deletes it" style="text;html=1;fontSize=10;align=center;fontColor=#94A3B8;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="90" y="352" width="270" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t2box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#EFF6FF;strokeColor=#29B5E8;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="470" y="110" width="330" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="t2title" value="TIER 2 — TEAM" style="text;html=1;fontSize=14;fontStyle=1;align=center;fontColor=#11567F;" vertex="1" parent="1">
+          <mxGeometry x="470" y="122" width="330" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="t2a" value="Git-backed workspace&#xa;feature branch + PR review" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#29B5E8;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="500" y="152" width="270" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="t2b" value="snow streamlit deploy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#29B5E8;fontSize=11;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="500" y="206" width="270" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="t2c" value="Owner: named team owner role&#xa;Source: feature branch&#xa;git_commit_hash: present&#xa;Not in catalog" style="text;html=1;fontSize=11;align=left;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="505" y="246" width="270" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="t2d" value="DE DOES NOT SUPPORT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#EF4444;fontSize=11;fontStyle=1;fontColor=#991B1B;" vertex="1" parent="1">
+          <mxGeometry x="500" y="318" width="270" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t2e" value="The owning team fixes it" style="text;html=1;fontSize=10;align=center;fontColor=#94A3B8;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="500" y="352" width="270" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="t3box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ECFDF5;strokeColor=#10B981;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="880" y="110" width="330" height="300" as="geometry" />
+        </mxCell>
+        <mxCell id="t3title" value="TIER 3 — CERTIFIED" style="text;html=1;fontSize=14;fontStyle=1;align=center;fontColor=#065F46;" vertex="1" parent="1">
+          <mxGeometry x="880" y="122" width="330" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="t3a" value="DCM project deployed&#xa;from an immutable Git tag" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#10B981;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="910" y="152" width="270" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="t3b" value="DEFINE STREAMLIT + tables + grants" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#10B981;fontSize=10;fontFamily=Courier New;" vertex="1" parent="1">
+          <mxGeometry x="910" y="206" width="270" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="t3c" value="Owner: functional role, never a person&#xa;Source: immutable Git tag&#xa;git_commit_hash: matches the tag&#xa;IN CATALOG" style="text;html=1;fontSize=11;align=left;fontColor=#475569;" vertex="1" parent="1">
+          <mxGeometry x="915" y="246" width="285" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="t3d" value="DE SUPPORTS — ON CALL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D1FAE5;strokeColor=#10B981;fontSize=11;fontStyle=1;fontColor=#065F46;" vertex="1" parent="1">
+          <mxGeometry x="910" y="318" width="270" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="t3e" value="Incident, on-call, rollback to prior version" style="text;html=1;fontSize=10;align=center;fontColor=#94A3B8;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="910" y="352" width="270" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="a1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#475569;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="t1box" target="t2box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="a1lbl" value="promote:&#xa;open a PR" style="text;html=1;fontSize=11;align=center;fontColor=#475569;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="390" y="222" width="80" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="a2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=3;strokeColor=#10B981;endArrow=block;endFill=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="t2box" target="t3box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="gate" value="THE GATE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#F59E0B;strokeWidth=2;fontSize=11;fontStyle=1;fontColor=#92400E;" vertex="1" parent="1">
+          <mxGeometry x="792" y="222" width="96" height="26" as="geometry" />
+        </mxCell>
+
+        <mxCell id="prereq" value="PREREQUISITE&#xa;&#xa;60 of 80 apps audited are on the legacy&#xa;ROOT_LOCATION source model.&#xa;&#xa;Those apps cannot use Git integration or&#xa;the container runtime at all. They must be&#xa;migrated to the FROM source model before&#xa;any of the above applies to them." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FEF2F2;strokeColor=#EF4444;strokeWidth=2;fontSize=11;align=left;spacingLeft=14;fontColor=#991B1B;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="60" y="440" width="330" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="gatebox" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFBEB;strokeColor=#F59E0B;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="420" y="440" width="640" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="gatetitle" value="The promotion gate is a column value, not a judgement call" style="text;html=1;fontSize=13;fontStyle=1;align=center;fontColor=#92400E;" vertex="1" parent="1">
+          <mxGeometry x="430" y="452" width="620" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="gatesql" value="SELECT full_name, tier, git_commit_hash&#xa;  FROM GOVERNANCE.APPS.V_STREAMLIT_INVENTORY_LATEST&#xa; WHERE git_commit_hash IS NULL;&#xa;-- everything returned here is the owner's problem, not the platform's" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1E293B;strokeColor=none;fontSize=11;fontFamily=Courier New;fontColor=#E2E8F0;align=left;verticalAlign=middle;spacingLeft=12;" vertex="1" parent="1">
+          <mxGeometry x="440" y="478" width="600" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="gatenote" value="Nobody types the hash in. The deployment mechanism writes it, so an app that&#xa;did not come from a repository cannot produce one." style="text;html=1;fontSize=10;align=center;fontColor=#92400E;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="430" y="558" width="620" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="catalog" value="CATALOG PORTAL&#xa;&#xa;certified apps only&#xa;per-persona views" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F0F4FF;strokeColor=#8B5CF6;strokeWidth=2;fontSize=12;fontStyle=1;fontColor=#4C1D95;" vertex="1" parent="1">
+          <mxGeometry x="1090" y="440" width="220" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#8B5CF6;endArrow=block;endFill=1;exitX=0.75;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="t3box" target="catalog">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ownote" value="Streamlit apps run with OWNER'S RIGHTS. The owner role decides what every viewer can reach — which is why a production app&#xa;must never be owned by an individual, or by ACCOUNTADMIN. 64 of the 80 apps audited are owned by an admin role." style="text;html=1;fontSize=11;align=center;fontColor=#475569;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="160" y="618" width="1080" height="34" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
