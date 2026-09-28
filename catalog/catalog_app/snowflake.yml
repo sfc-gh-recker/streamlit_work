@@ -1,0 +1,13 @@
+definition_version: "2"
+entities:
+  app_catalog:
+    type: streamlit
+    identifier:
+      name: APP_CATALOG
+      database: GOVERNANCE
+      schema: APPS
+    main_file: streamlit_app.py
+    query_warehouse: SNOW_INTELLIGENCE_DEMO_WH
+    artifacts:
+      - streamlit_app.py
+      - requirements.txt
