@@ -46,6 +46,14 @@ positive the audit exists to avoid: it flags a fully governed DCM app as
 ungoverned. Provenance lives in three different places — see
 `references/gotchas.md`.
 
+`.github/scripts/verify_provenance.py` is the executable form of that rule, and
+the one to copy. It accepts a commit hash pinned on the app object *or* a SHA
+recovered from a DCM deployment's `source_file_path`, and treats a branch-path
+deployment as a failure with a distinct message, because a moving pointer is a
+different defect from no provenance at all. This repository's own CI got this
+wrong until it was corrected — the inline version rejected every DCM
+deployment.
+
 Assertions worth failing a build on:
 
 | Assertion | Must be |

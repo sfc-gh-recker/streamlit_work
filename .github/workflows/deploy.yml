@@ -20,6 +20,31 @@
 #
 # The PLAN step runs on every pull request so reviewers can see the changeset
 # before it is applied. DEPLOY runs only on the protected branch.
+#
+# ----------------------------------------------------------------------------
+# THIS WORKFLOW SKIPS ITSELF UNTIL YOU CONFIGURE CREDENTIALS
+# ----------------------------------------------------------------------------
+# This repository is handed to teams who will point it at their own account, so
+# the workflow cannot ship with working credentials. Rather than fail on every
+# push with an opaque `Connection default is not configured`, the preflight job
+# below detects the missing secrets and skips the rest with a summary naming
+# exactly what to set. A skipped job does not fail the run.
+#
+# To activate it, set these repository secrets (Settings > Secrets and
+# variables > Actions) and create a `dev` environment if you want the plan job
+# gated too:
+#
+#   SNOWFLAKE_ACCOUNT        e.g. MYORG-MYACCOUNT
+#   SNOWFLAKE_USER           the CI service user
+#   SNOWFLAKE_DEPLOY_ROLE    dedicated deployer role; NOT ACCOUNTADMIN
+#   SNOWFLAKE_WAREHOUSE      warehouse for the deploy session
+#   SNOWFLAKE_PRIVATE_KEY    unencrypted PKCS#8 private key, full PEM body
+#
+# You must also replace the MYORG-MYACCOUNT and ANALYTICS_WH placeholders in
+# demo_app/manifest.yml, and create the APP_DEPLOYER_PROD role its prod target
+# names. The deploying role permanently becomes the role the app runs as --
+# Streamlit ownership cannot be transferred after creation -- so that role is a
+# governance decision, not a convenience.
 # ============================================================================
 
 name: Deploy Sales Performance
@@ -32,18 +57,71 @@ on:
     branches: [main]
     paths:
       - 'demo_app/**'
+  # Allows a dry run of the preflight without touching demo_app/.
+  workflow_dispatch:
 
 env:
   PYTHON_VERSION: '3.11'
 
 jobs:
   # --------------------------------------------------------------------------
+  # PREFLIGHT — is this repository actually wired to an account?
+  # --------------------------------------------------------------------------
+  # A separate job because the `secrets` context is not available in job-level
+  # `if:` conditions. Exposing a boolean output is the supported way to gate
+  # downstream jobs on secret availability.
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - name: Check for Snowflake credentials
+        id: check
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_DEPLOY_ROLE: ${{ secrets.SNOWFLAKE_DEPLOY_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+        run: |
+          missing=()
+          for name in SNOWFLAKE_ACCOUNT SNOWFLAKE_USER SNOWFLAKE_DEPLOY_ROLE \
+                      SNOWFLAKE_WAREHOUSE SNOWFLAKE_PRIVATE_KEY; do
+            if [ -z "${!name}" ]; then missing+=("$name"); fi
+          done
+
+          if [ ${#missing[@]} -eq 0 ]; then
+            echo 'configured=true' >> "$GITHUB_OUTPUT"
+            echo '## Preflight: credentials present' >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo 'configured=false' >> "$GITHUB_OUTPUT"
+          {
+            echo '## Preflight: workflow skipped — not wired to an account'
+            echo
+            echo 'This repository ships as reference guidance, so it has no'
+            echo 'credentials of its own. The plan and deploy jobs were skipped'
+            echo 'rather than failed.'
+            echo
+            echo 'Missing repository secrets:'
+            for name in "${missing[@]}"; do echo "- \`$name\`"; done
+            echo
+            echo 'See the header of `.github/workflows/deploy.yml` for the full'
+            echo 'activation checklist, including the manifest placeholders and'
+            echo 'the deployer role that must exist first.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # --------------------------------------------------------------------------
   # PLAN — on pull requests. Never mutates anything.
   # --------------------------------------------------------------------------
+  # No `environment:` here deliberately. An environment exists to carry an
+  # approval gate, and a plan changes nothing that needs approving; declaring
+  # one only adds a dependency on that environment existing.
   plan:
-    if: github.event_name == 'pull_request'
+    needs: preflight
+    if: github.event_name == 'pull_request' && needs.preflight.outputs.configured == 'true'
     runs-on: ubuntu-latest
-    environment: dev
     steps:
       - uses: actions/checkout@v4
 
@@ -95,11 +173,12 @@ jobs:
   # DEPLOY — on merge to main. Gated by the GitHub environment.
   # --------------------------------------------------------------------------
   deploy:
-    if: github.event_name == 'push'
+    needs: preflight
+    if: github.event_name == 'push' && needs.preflight.outputs.configured == 'true'
     runs-on: ubuntu-latest
-    # Configure required reviewers on this environment in repo settings. That
-    # is the approval gate; this workflow deliberately does not implement its
-    # own.
+    # Configure required reviewers on this environment in repository settings.
+    # That is the approval gate; this workflow deliberately does not implement
+    # its own.
     environment: prod
     steps:
       - uses: actions/checkout@v4
@@ -135,12 +214,23 @@ jobs:
         # The prod target's project_owner IS the functional app owner role.
         # Streamlit ownership cannot be transferred after creation, so the
         # deploying role permanently becomes the role the app runs as.
+        #
+        # Deploy from the commit path, not a branch path. DCM retains no commit
+        # hash of its own -- see .github/scripts/verify_provenance.py -- so a
+        # branch path leaves a moving pointer and the deployment becomes
+        # unauditable. ${GITHUB_SHA} is the commit under test.
         run: |
           snow dcm deploy --target prod --alias "${GITHUB_SHA::12}"
 
-      # The provenance check. If the deployed object carries no commit hash,
-      # the deployment did not come from the repository and the app must not be
-      # treated as certified. Failing here keeps the catalog honest.
+      # The provenance check. If the deployment cannot be traced to a commit,
+      # the app must not be treated as certified. Failing here keeps the
+      # catalog honest.
+      #
+      # This deliberately does NOT just read git_commit_hash off the app
+      # object. That column is empty for every DCM deployment, so the obvious
+      # check rejects the best-governed path there is. The script accepts
+      # provenance from either source -- the executable form of the rule
+      # "gate on provenance = NONE, never on git_commit_hash IS NULL".
       - name: Verify Git provenance landed
         env:
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
@@ -150,18 +240,9 @@ jobs:
           SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT
           SNOWFLAKE_PRIVATE_KEY_PATH: /home/runner/.snowflake/rsa_key.p8
         run: |
-          snow sql -q "DESCRIBE STREAMLIT RETAIL_DEMO.SERVE.SALES_PERFORMANCE" \
-            --format json > describe.json
-          python - <<'PY'
-          import json, sys
-          rows = json.load(open("describe.json"))
-          row = rows[0] if isinstance(rows, list) else rows
-          commit = row.get("default_version_git_commit_hash")
-          if not commit:
-              sys.exit("FAIL: no git_commit_hash on the deployed app. "
-                       "Not eligible for CERTIFIED tier.")
-          print(f"OK: deployed app traces to commit {commit}")
-          PY
+          python .github/scripts/verify_provenance.py \
+            --app     RETAIL_DEMO.SERVE.SALES_PERFORMANCE \
+            --project GOVERNANCE.PROJECTS.SALES_PERFORMANCE_PROD
 
       - name: Refresh the governance inventory
         env:
