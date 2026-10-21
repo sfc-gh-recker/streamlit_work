@@ -31,6 +31,29 @@ There is also a single-page HTML field guide,
 covers the same ground in one scrollable document for people who will not read
 nine files.
 
+### Running it, rather than reading it
+
+The docs explain the practice. The agent skill at
+[`.cortex/skills/deploy-streamlit-practice/`](.cortex/skills/deploy-streamlit-practice/SKILL.md)
+*executes* it — in Cortex Code, ask it to "set up a Streamlit practice" and it
+walks the rollout in six phases, holds an approval gate before every mutation,
+and records progress to `.streamlit-practice/state.json` so a multi-week
+programme resumes instead of restarting.
+
+It is worth having for two reasons the docs cannot cover:
+
+- **It branches on what your estate actually contains.** Phase 1 measures, and
+  the size of the legacy population determines whether migration is a side
+  quest or the main event.
+- **It gates duplicate apps.** `check-duplicate-app` runs before any new app is
+  created, searching both the account and the repo. This is the only control in
+  the whole set that *prevents* sprawl rather than measuring it — see
+  [`audit/duplicate_check.sql`](audit/duplicate_check.sql).
+
+Phase ordering is a real dependency, not a suggestion: building an app before
+the role model exists produces an app owned by an admin role, and Streamlit
+ownership cannot be transferred — so the only remedy is to drop and recreate it.
+
 ---
 
 ## The problem
@@ -126,8 +149,23 @@ SELECT * FROM GOVERNANCE.APPS.V_STREAMLIT_REMEDIATION_QUEUE;
 │   └── 08_testing_and_validation.md Six testing layers
 ├── streamlit-dev-management-guide.html   Same ground, one scrollable page
 │
+├── .cortex/skills/
+│   └── deploy-streamlit-practice/   ◀ RUNS the guide, in six gated phases
+│       ├── SKILL.md                 Router, phase dependencies, execution rules
+│       ├── check-duplicate-app/     Pre-flight gate before any new app
+│       ├── phases/1-assess/         Audit the estate, record the baseline
+│       ├── phases/2-foundation/     Roles, Git repository, compute
+│       ├── phases/3-first-app/      DCM deploy from a commit, prove provenance
+│       ├── phases/4-govern/         Registry, certification, catalog portal
+│       ├── phases/5-migrate/        Triage, retire, migrate ROOT_LOCATION
+│       ├── phases/6-harden/         Tests, CI gate, recurring audit, onboarding
+│       └── references/
+│           ├── gotchas.md           Verified traps, each measured not inferred
+│           └── state.md             Resumable state contract
+│
 ├── audit/
-│   └── streamlit_inventory.sql      Inventory procedure, 4 views, weekly task
+│   ├── streamlit_inventory.sql      Inventory procedure, 4 views, weekly task
+│   └── duplicate_check.sql          "Does this app already exist?" pre-flight
 ├── catalog/
 │   ├── registry.sql                 App registry, tags, certification, 5 views
 │   └── catalog_app/                 Curated app portal (Browse + Operations)

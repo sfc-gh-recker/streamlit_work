@@ -34,6 +34,18 @@ Every limitation recorded here was verified empirically against a live Snowflake
 | Debugging a broken app | 08 §5, then 06 §3 |
 | Deciding whether to use Streamlit at all | 06 §9 |
 
+### Or have an agent run it
+
+[`.cortex/skills/deploy-streamlit-practice/`](../.cortex/skills/deploy-streamlit-practice/SKILL.md)
+executes this doc set as a six-phase rollout in Cortex Code, with an approval
+gate before every mutation and resumable state. It references these documents
+for rationale rather than restating them, so the two cannot drift.
+
+It adds one control the documents do not: a duplicate pre-flight that runs
+before any new app is created, searching both the Snowflake account and the
+repo. Everything else here measures sprawl after the fact; that gate is what
+prevents it.
+
 ---
 
 ## The one-sentence version
