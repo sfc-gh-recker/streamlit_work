@@ -1,5 +1,5 @@
 """
-Data access for the Merch Performance dashboard.
+Data access for the Sales Performance dashboard.
 
 Two conventions worth keeping, both of which the September filter-state
 investigation reinforced:
@@ -18,7 +18,7 @@ import pandas as pd
 import streamlit as st
 
 
-@st.cache_data(ttl=600, show_spinner="Loading merch performance...")
+@st.cache_data(ttl=600, show_spinner="Loading sales performance...")
 def load_performance(serve_view: str, start_date, end_date) -> pd.DataFrame:
     """
     Aggregate performance over a date window.

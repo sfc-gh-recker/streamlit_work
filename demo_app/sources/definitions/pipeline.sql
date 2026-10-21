@@ -1,5 +1,5 @@
 -- ============================================================================
--- Data foundation for the Merch Performance dashboard
+-- Data foundation for the Sales Performance dashboard
 -- ============================================================================
 -- These objects are deployed by the SAME DCM project as the Streamlit app that
 -- reads them. A promotion moves the schema and the dashboard together, so the
@@ -7,7 +7,7 @@
 -- ============================================================================
 
 DEFINE DATABASE RETAIL_DEMO{{ env_suffix }}
-    COMMENT = 'Merch performance analytics -- {{ env_suffix }} environment. Managed by DCM.';
+    COMMENT = 'Sales performance analytics -- {{ env_suffix }} environment. Managed by DCM.';
 
 DEFINE SCHEMA RETAIL_DEMO{{ env_suffix }}.CORE
     COMMENT = 'Base tables and transformations';
@@ -31,7 +31,7 @@ DEFINE TABLE RETAIL_DEMO{{ env_suffix }}.CORE.SKU_DAILY_SALES (
     GROSS_REVENUE   NUMBER(38,2)    COMMENT 'Gross revenue in USD',
     RETURNS_UNITS   NUMBER(38,0)    COMMENT 'Units returned against this SKU/date'
 )
-COMMENT = 'Daily SKU-level merch sales. Synthetic data for demonstration.';
+COMMENT = 'Daily SKU-level sales. Synthetic data for demonstration.';
 
 
 -- ----------------------------------------------------------------------------
@@ -44,7 +44,7 @@ COMMENT = 'Daily SKU-level merch sales. Synthetic data for demonstration.';
 -- Note the fully qualified reference carries env_suffix, so the DEV view reads
 -- the DEV table. This is templated in the DEFINE, which works. What does NOT
 -- work is templating a database name into the Python -- see utils/config.py.
-DEFINE VIEW RETAIL_DEMO{{ env_suffix }}.SERVE.V_MERCH_PERFORMANCE (
+DEFINE VIEW RETAIL_DEMO{{ env_suffix }}.SERVE.V_SALES_PERFORMANCE (
     SALE_DATE       COMMENT 'Date of sale',
     LEAGUE          COMMENT 'League',
     TEAM            COMMENT 'Team',

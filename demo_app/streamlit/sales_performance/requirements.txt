@@ -31,8 +31,8 @@
 #
 # EXACT PINS, NOT RANGES, on either runtime. Range pins such as
 # streamlit>=1.39.0 do not reliably take effect (see https://docs.snowflake.com/en/developer-guide/streamlit/app-development/dependency-management). The audit of
-# this account found 82 of 82 apps with no exact pin, and unpinned versions are
-# the class of problem behind a filter-state bug seen on a customer app in
+# one audit found every app lacking an exact pin, and unpinned versions are
+# the class of problem behind a filter-state bug investigated on a deployed app in
 # September, which reproduced on deployed SiS but not on local Streamlit 1.50.
 # ============================================================================
 streamlit==1.52.2

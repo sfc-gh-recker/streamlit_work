@@ -1,9 +1,9 @@
 """
-Merch Performance — reference Streamlit in Snowflake app.
+Sales Performance — reference Streamlit in Snowflake app.
 
 This app is deliberately a teaching artifact as well as a working dashboard.
 The filter block below follows the four rules that came out of the September
-filter-state investigation on a customer app, where a deselected filter came
+filter-state investigation on a deployed app, where a deselected filter came
 back after switching grids.
 
 THE FOUR RULES
@@ -39,7 +39,7 @@ from utils.config import (
 from utils.data import load_date_bounds, load_filter_domain, load_performance
 
 st.set_page_config(
-    page_title="Merch Performance",
+    page_title="Sales Performance",
     page_icon=":material/sports_football:",
     layout="wide",
 )
@@ -50,7 +50,7 @@ conn = st.connection("snowflake")
 # DCM Jinja cannot reach this file, so this is how the app knows.
 env = resolve_environment(conn)
 
-st.title("Merch Performance")
+st.title("Sales Performance")
 render_env_badge(env)
 
 serve_view = env["serve_view"]

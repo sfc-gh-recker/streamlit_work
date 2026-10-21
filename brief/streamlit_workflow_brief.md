@@ -1,7 +1,7 @@
 # Streamlit Development & Management: Recommended Workflow
 
-**Audience:** Data engineering and platform teams (practitioners) · **Duration:** 45 minutes
-**Prepared by:** Rich Ecker, Solutions Engineering
+**Audience:** Data engineering and platform teams who own a Streamlit estate
+**Scope:** Shadow-app governance, self-service permissions, Git provenance, app cataloguing
 
 ---
 
@@ -16,11 +16,11 @@ You cannot draw that line with a naming convention or a wiki page. You need a pr
 Snowflake records the source repository, branch, and exact Git commit on any Streamlit app deployed from a Snowflake Git repository. It is visible on the object itself:
 
 ```sql
-DESCRIBE STREAMLIT CORTEX_AGENTS_DEMO.PUBLIC.CORTEX_AGENT_CHAT_APP;
+DESCRIBE STREAMLIT <db>.<schema>.<app>;
 ```
 
 ```
-default_version_source_location_uri   @...GITHUB_REPO_CORTEX_AGENTS_DEMO/branches/main/agent_app/
+default_version_source_location_uri   @<db>.<schema>.<git_repo>/branches/main/app/
 default_version_git_commit_hash       15e3e34e80cdc1e8d64b34a1d0b8ad206d002c1b
 ```
 
@@ -33,37 +33,51 @@ Nobody typed that hash. The deployment mechanism wrote it, which means an app th
 
 That single column is the promotion gate and the support boundary. It replaces an argument about whether an app "looks important" with a query anyone can run.
 
-## What the audit found in a real account
+## What the audit typically finds
 
-`audit/streamlit_inventory.sql` inventories every app and classifies it. Run live on a working demo account:
+`audit/streamlit_inventory.sql` inventories every app and classifies it. The
+proportions below are an **illustrative sample from one anonymized account** of
+roughly 80 apps — run the audit in your own account to get real numbers. The
+shape tends to repeat; the counts will not.
 
-| Finding | Count (of 82) |
+| Finding | Share of estate |
 |---|---|
-| Total Streamlit apps | **82** |
-| No Git provenance | **81 (98.8%)** |
-| Legacy `ROOT_LOCATION` source model | **60 (73%)** |
-| Admin-owned | 64 (78%) |
-| Never named (Snowsight auto-name) | 58 |
-| Undocumented | 73 |
-| Duplicates ("Copy of", "Backup of") | 3 |
-| Scratch / test / debug naming | 25 |
-| Streamlit version not pinned exactly | **82 (100%)** |
-| Over a year old | 68 |
-| Not inspectable at all | 1 |
-| Certified | **1** |
+| No Git provenance | **~98%** |
+| Legacy `ROOT_LOCATION` source model | **~75%** |
+| Admin-owned (viewers inherit admin rights) | ~80% |
+| Never named (Snowsight auto-name) | ~70% |
+| Undocumented | ~90% |
+| Duplicates ("Copy of", "Backup of") | a handful |
+| Scratch / test / debug naming | ~30% |
+| Streamlit version not pinned exactly | **100%** |
+| Over a year old | ~80% |
+| Certified | **~1 app** |
 
-Figures are the pre-existing estate, measured 28 September 2026. They exclude the
-three reference apps this workflow deploys, so the "before" picture stays honest.
+Figures exclude the reference apps this workflow itself deploys, so the "before"
+picture stays honest.
 
 Three of these change how you plan:
 
-**81 of 82 have no provenance.** When one breaks there is no diff to read and no commit to roll back to. That is the support-load problem in one number.
+**Almost nothing has provenance.** When an app breaks there is no diff to read
+and no commit to roll back to. That is the support-load problem in one number.
 
-**60 of 82 are on the legacy `ROOT_LOCATION` source model.** These apps *cannot* use Git integration, *cannot* run on the container runtime, and *cannot* be multi-file edited in Snowsight. This is a hard technical ceiling, not a process gap. **Three quarters of the estate must be migrated to the `FROM` source model before a Git workflow is even possible.** Any plan that says "start using Git" is understating the work by that number. Diagnostic: `DESCRIBE STREAMLIT` returns `root_location` for legacy, `live_version_location_uri` for modern.
+**Roughly three quarters are on the legacy `ROOT_LOCATION` source model.** These
+apps *cannot* use Git integration, *cannot* run on the container runtime, and
+*cannot* be multi-file edited in Snowsight. This is a hard technical ceiling, not
+a process gap. **They must be migrated to the `FROM` source model before a Git
+workflow is even possible.** Any plan that says "start using Git" is understating
+the work by that count. Diagnostic: `DESCRIBE STREAMLIT` returns `root_location`
+for legacy, `live_version_location_uri` for modern.
 
-**82 of 82 have no exact version pin.** Range pins like `streamlit>=1.39.0` silently do not take effect on the warehouse runtime (see https://docs.snowflake.com/en/developer-guide/streamlit/app-development/dependency-management). Every app can change behaviour with no code edit. This is the class of problem behind the filter-state bug on your own app in September, which reproduced on deployed SiS but not on local Streamlit 1.50.
+**Nothing is version-pinned exactly.** Range pins like `streamlit>=1.39.0`
+silently do not take effect on the warehouse runtime (see https://docs.snowflake.com/en/developer-guide/streamlit/app-development/dependency-management). Every app
+can change behaviour with no code edit. This is the class of problem behind a
+filter-state bug investigated on a deployed app, which reproduced on SiS but not
+on local Streamlit 1.50.
 
-One honest caveat: the single certified app is *still* admin-owned and *still* unpinned. Provenance is necessary, not sufficient — it is the gate, not the whole standard.
+One honest caveat from that sample: the single certified app was *still*
+admin-owned and *still* unpinned. Provenance is necessary, not sufficient — it is
+the gate, not the whole standard.
 
 ## The recommended pattern: three tiers, one gate
 
@@ -107,7 +121,7 @@ than tag-deployed generally: `CREATE STREAMLIT` and `ALTER STREAMLIT … ADD VER
 reject `tags/` and `commits/` paths outright and accept only `branches/`. DCM is
 the only mechanism that will deploy from an immutable tag.
 
-Never make an individual the long-term owner of a production app. Streamlit apps run with **owner's rights** by default, so the owner role determines what every viewer can reach. An app owned by `ACCOUNTADMIN` hands admin-level data access to everyone who can open it — which is what 64 of the 82 apps above currently do.
+Never make an individual the long-term owner of a production app. Streamlit apps run with **owner's rights** by default, so the owner role determines what every viewer can reach. An app owned by `ACCOUNTADMIN` hands admin-level data access to everyone who can open it — which is what roughly 80% of the apps above currently do.
 
 ## The permissions unblock
 
@@ -154,8 +168,8 @@ Mobile access for executives and scheduled PDF reports are real asks and they ar
 
 | # | Action | Owner |
 |---|---|---|
-| 1 | Run the audit in your own account. Get your real numbers. | Data engineering |
-| 2 | Triage the legacy `ROOT_LOCATION` apps — this gates everything else | Data engineering + platform |
+| 1 | Run the audit in your own account. Get your real numbers. | Platform team |
+| 2 | Triage the legacy `ROOT_LOCATION` apps — this gates everything else | Platform + app owners |
 | 3 | Pin exact Streamlit versions on anything business-facing | App owners |
 | 4 | Stand up `SIS_DEVELOPER` and functional owner roles | Platform |
 | 5 | Pick one real app, move it to Git, deploy via DCM as the reference | Joint |

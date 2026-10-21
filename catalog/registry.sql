@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS GOVERNANCE.APPS.APP_REGISTRY (
 
     -- discovery
     DOMAIN               VARCHAR,            -- Commerce, Finance, Supply Chain
-    PERSONA              VARCHAR,            -- Exec, Analyst, Ops, Merchandiser
+    PERSONA              VARCHAR,            -- Exec, Analyst, Ops, Category Manager
     TIER                 VARCHAR,            -- EXPLORE | TEAM | CERTIFIED
 
     -- accountability: these are PEOPLE, deliberately
@@ -324,21 +324,21 @@ $$;
 MERGE INTO GOVERNANCE.APPS.APP_REGISTRY t
 USING (
     SELECT
-        'RETAIL_DEMO_DEV.SERVE.MERCH_PERFORMANCE' AS FULL_NAME,
-        'Merch Performance'                          AS TITLE,
-        'League and channel merch performance: revenue, units, and return rates by team and sales channel.' AS DESCRIPTION,
+        'RETAIL_DEMO_DEV.SERVE.SALES_PERFORMANCE' AS FULL_NAME,
+        'Sales Performance'                          AS TITLE,
+        'Sales performance by product line and channel: revenue, units, and return rates.' AS DESCRIPTION,
         'Commerce'                                   AS DOMAIN,
         'Analyst'                                    AS PERSONA,
         'CERTIFIED'                                  AS TIER,
-        'Business Owner'                             AS BUSINESS_OWNER,
+        'Analytics Lead'                             AS BUSINESS_OWNER,
         'Rich Ecker'                                 AS TECHNICAL_OWNER,
         'Data Platform'                              AS SUPPORT_GROUP,
-        'APP_MERCH_OWNER_DEV'                        AS OWNER_ROLE,
-        'APP_MERCH_VIEWER_DEV'                       AS VIEWER_ROLE,
+        'APP_RETAIL_OWNER_DEV'                        AS OWNER_ROLE,
+        'APP_RETAIL_VIEWER_DEV'                       AS VIEWER_ROLE,
         'Internal'                                   AS DATA_CLASSIFICATION,
-        'https://github.com/sfc-gh-recker/streamlit_work' AS SOURCE_REPO,
-        'demo_app/streamlit/merch_performance'       AS SOURCE_PATH,
-        'GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_DEV'  AS DCM_PROJECT,
+        'https://github.com/your-org/your-repo' AS SOURCE_REPO,
+        'demo_app/streamlit/sales_performance'       AS SOURCE_PATH,
+        'GOVERNANCE.PROJECTS.SALES_PERFORMANCE_DEV'  AS DCM_PROJECT,
         'storefront'                                 AS ICON
 ) s
 ON t.FULL_NAME = s.FULL_NAME

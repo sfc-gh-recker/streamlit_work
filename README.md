@@ -2,7 +2,7 @@
 
 A reference workflow for developing, governing, and promoting Streamlit in Snowflake (SiS) apps at enterprise scale.
 
-Prepared by Rich Ecker, Snowflake Solutions Engineering.
+General guidance for teams deploying and governing Streamlit in Snowflake at scale.
 
 ---
 
@@ -42,21 +42,45 @@ An app with neither is ungoverned. That is the promotion gate and the support bo
 
 See [`brief/streamlit_workflow_brief.md`](brief/streamlit_workflow_brief.md) and [`brief/lifecycle_flow.svg`](brief/lifecycle_flow.svg).
 
-## What the audit found on a real account
+## What the audit detects
 
-| Finding | Count (of 82) |
+Run it against your own account and you get your own numbers. There is no
+`ACCOUNT_USAGE` view for Streamlit, so the procedure loops `SHOW STREAMLITS`
+plus `DESCRIBE STREAMLIT` into a table and classifies each app:
+
+| Column | What it tells you |
 |---|---|
-| No provenance at all | **81 (98.8%)** |
-| Legacy `ROOT_LOCATION` source model | **60 (73%)** |
-| Admin-owned (viewers inherit admin rights) | 65 |
-| Streamlit version not pinned exactly | **81 (100%)** |
-| Certified | **2** |
+| `PROVENANCE` | `GIT_DIRECT`, `DCM_MANAGED`, or `NONE` — the governance gate |
+| `COMMIT_SHA` | Which commit is actually running, from either provenance path |
+| `IS_UNPINNED_SOURCE` | Governed, but not traceable to a single commit |
+| `IS_LEGACY_SOURCE` | On `ROOT_LOCATION`, so Git and container runtime are unavailable |
+| `IS_ADMIN_OWNED` | Owner's rights means viewers inherit the owner's reach |
+| `IS_UNNAMED` | Machine-generated Snowsight name, never renamed |
+| `IS_UNPINNED` | No exact `streamlit==` pin |
+| `TIER` | `CERTIFIED` / `TEAM` / `EXPLORE` / `REMEDIATE` |
+| `FINDINGS` | Human-readable summary per app |
 
-Three of these change how you plan:
+Three of these tend to change how teams plan, whatever the counts turn out to be:
 
-- **81 of 82 have no provenance.** When one breaks there is no diff to read and no commit to roll back to.
-- **60 of 82 are legacy `ROOT_LOCATION`.** Those apps *cannot* use Git integration or the container runtime. This is a hard technical ceiling, not a process gap — three quarters of the estate must be migrated to the `FROM` source model before a Git workflow applies to them at all. Any plan that says "start using Git" understates the work by that number.
-- **82 of 82 have no exact version pin.** Range pins like `streamlit>=1.39.0` silently do not take effect (see https://docs.snowflake.com/en/developer-guide/streamlit/app-development/dependency-management), so apps change behaviour with no code edit.
+- **Apps with no provenance.** When one breaks there is no diff to read and no
+  commit to roll back to. This is usually the largest group, and it is the
+  support-load problem in one number.
+- **Legacy `ROOT_LOCATION` apps.** These *cannot* use Git integration or the
+  container runtime. It is a hard technical ceiling, not a process gap, so they
+  must be migrated to the `FROM` source model before a Git workflow applies to
+  them at all. Any plan that says "start using Git" understates the work by
+  this count.
+- **Apps with no exact version pin.** Range pins like `streamlit>=1.39.0`
+  silently do not take effect (see https://docs.snowflake.com/en/developer-guide/streamlit/app-development/dependency-management), so an app can change behaviour
+  with no code edit.
+
+Start here:
+
+```sql
+CALL GOVERNANCE.APPS.SP_AUDIT_STREAMLIT_APPS();
+SELECT * FROM GOVERNANCE.APPS.V_STREAMLIT_SPRAWL_SUMMARY;
+SELECT * FROM GOVERNANCE.APPS.V_STREAMLIT_REMEDIATION_QUEUE;
+```
 
 ## Layout
 
@@ -76,7 +100,7 @@ Three of these change how you plan:
 │   │   ├── pipeline.sql             Tables and serving view
 │   │   ├── access.sql               Functional owner, viewer, developer roles
 │   │   └── dashboard.sql            DEFINE STREAMLIT
-│   └── streamlit/merch_performance/
+│   └── streamlit/sales_performance/
 │       ├── streamlit_app.py         Reference app (correct session-state patterns)
 │       ├── requirements.txt         Exact pins
 │       └── utils/

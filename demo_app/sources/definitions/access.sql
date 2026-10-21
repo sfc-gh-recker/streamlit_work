@@ -11,7 +11,7 @@
 --     change team the app either breaks or silently keeps their access.
 --   * A production app must NEVER be owned by ACCOUNTADMIN or SYSADMIN. Doing
 --     so hands admin-level reach to everyone who can open the dashboard. The
---     audit found 64 of 82 existing apps in this state.
+--     one audit found roughly 80% of existing apps in this state.
 --   * CURRENT_ROLE() inside the app returns the OWNER's role, not the
 --     viewer's. Row access policies keyed on CURRENT_ROLE() therefore do not
 --     segment viewers under owner's rights. If per-viewer segmentation is
@@ -23,25 +23,25 @@
 -- ----------------------------------------------------------------------------
 -- Functional owner role -- the app runs as this
 -- ----------------------------------------------------------------------------
-DEFINE ROLE APP_MERCH_OWNER{{ env_suffix }}
-    COMMENT = 'Functional owner of the Merch Performance app. Determines what viewers can reach.';
+DEFINE ROLE APP_RETAIL_OWNER{{ env_suffix }}
+    COMMENT = 'Functional owner of the Sales Performance app. Determines what viewers can reach.';
 
 -- Least privilege: the owner role reads the serving view and nothing else.
 -- It deliberately has no access to CORE, so a bug in the app cannot expose
 -- base tables.
 GRANT USAGE ON DATABASE RETAIL_DEMO{{ env_suffix }}
-    TO ROLE APP_MERCH_OWNER{{ env_suffix }};
+    TO ROLE APP_RETAIL_OWNER{{ env_suffix }};
 GRANT USAGE ON SCHEMA RETAIL_DEMO{{ env_suffix }}.SERVE
-    TO ROLE APP_MERCH_OWNER{{ env_suffix }};
-GRANT SELECT ON VIEW RETAIL_DEMO{{ env_suffix }}.SERVE.V_MERCH_PERFORMANCE
-    TO ROLE APP_MERCH_OWNER{{ env_suffix }};
+    TO ROLE APP_RETAIL_OWNER{{ env_suffix }};
+GRANT SELECT ON VIEW RETAIL_DEMO{{ env_suffix }}.SERVE.V_SALES_PERFORMANCE
+    TO ROLE APP_RETAIL_OWNER{{ env_suffix }};
 GRANT USAGE ON WAREHOUSE {{ warehouse }}
-    TO ROLE APP_MERCH_OWNER{{ env_suffix }};
+    TO ROLE APP_RETAIL_OWNER{{ env_suffix }};
 -- Container runtime: the owner role needs the compute pool too, not just the
 -- warehouse. Omitting this is a common cause of an app that deploys cleanly and
 -- then fails to start.
 GRANT USAGE ON COMPUTE POOL SYSTEM_COMPUTE_POOL_CPU
-    TO ROLE APP_MERCH_OWNER{{ env_suffix }};
+    TO ROLE APP_RETAIL_OWNER{{ env_suffix }};
 
 
 -- ----------------------------------------------------------------------------
@@ -51,17 +51,17 @@ GRANT USAGE ON COMPUTE POOL SYSTEM_COMPUTE_POOL_CPU
 -- They need NO grants on the underlying data, because the app reads it as the
 -- owner role. That is the main ergonomic benefit of owner's rights and why it
 -- is the right default for a reporting dashboard.
-DEFINE ROLE APP_MERCH_VIEWER{{ env_suffix }}
-    COMMENT = 'Business viewers of the Merch Performance app. No direct data grants.';
+DEFINE ROLE APP_RETAIL_VIEWER{{ env_suffix }}
+    COMMENT = 'Business viewers of the Sales Performance app. No direct data grants.';
 
 GRANT USAGE ON DATABASE RETAIL_DEMO{{ env_suffix }}
-    TO ROLE APP_MERCH_VIEWER{{ env_suffix }};
+    TO ROLE APP_RETAIL_VIEWER{{ env_suffix }};
 GRANT USAGE ON SCHEMA RETAIL_DEMO{{ env_suffix }}.SERVE
-    TO ROLE APP_MERCH_VIEWER{{ env_suffix }};
-GRANT USAGE ON STREAMLIT RETAIL_DEMO{{ env_suffix }}.SERVE.MERCH_PERFORMANCE
-    TO ROLE APP_MERCH_VIEWER{{ env_suffix }};
+    TO ROLE APP_RETAIL_VIEWER{{ env_suffix }};
+GRANT USAGE ON STREAMLIT RETAIL_DEMO{{ env_suffix }}.SERVE.SALES_PERFORMANCE
+    TO ROLE APP_RETAIL_VIEWER{{ env_suffix }};
 GRANT USAGE ON WAREHOUSE {{ warehouse }}
-    TO ROLE APP_MERCH_VIEWER{{ env_suffix }};
+    TO ROLE APP_RETAIL_VIEWER{{ env_suffix }};
 
 
 -- ----------------------------------------------------------------------------
@@ -88,7 +88,7 @@ GRANT USAGE ON SCHEMA RETAIL_DEMO{{ env_suffix }}.SERVE
     TO ROLE SIS_DEVELOPER{{ env_suffix }};
 GRANT CREATE STREAMLIT ON SCHEMA RETAIL_DEMO{{ env_suffix }}.SERVE
     TO ROLE SIS_DEVELOPER{{ env_suffix }};
-GRANT SELECT ON VIEW RETAIL_DEMO{{ env_suffix }}.SERVE.V_MERCH_PERFORMANCE
+GRANT SELECT ON VIEW RETAIL_DEMO{{ env_suffix }}.SERVE.V_SALES_PERFORMANCE
     TO ROLE SIS_DEVELOPER{{ env_suffix }};
 GRANT USAGE ON WAREHOUSE {{ warehouse }}
     TO ROLE SIS_DEVELOPER{{ env_suffix }};
@@ -129,6 +129,6 @@ GRANT USAGE ON WAREHOUSE {{ warehouse }}
 -- found, that is the actual remediation path -- redeploy, not re-grant. Worth
 -- being blunt about this with anyone who assumes it is a one-line fix.
 --
--- APP_MERCH_OWNER below is therefore defined and privileged so it is ready to
+-- APP_RETAIL_OWNER below is therefore defined and privileged so it is ready to
 -- be used as a deploying role, but no ownership transfer is attempted here.
-GRANT ROLE APP_MERCH_OWNER{{ env_suffix }} TO ROLE SYSADMIN;
+GRANT ROLE APP_RETAIL_OWNER{{ env_suffix }} TO ROLE SYSADMIN;

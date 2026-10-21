@@ -13,7 +13,7 @@ demo_app/
 │   ├── pipeline.sql                 DEFINE DATABASE / SCHEMA / TABLE / VIEW
 │   ├── access.sql                   DEFINE ROLE + GRANT
 │   └── dashboard.sql                DEFINE STREAMLIT
-└── streamlit/merch_performance/     the app, imported as an asset
+└── streamlit/sales_performance/     the app, imported as an asset
 ```
 
 One command promotes all of it:
@@ -29,9 +29,9 @@ One definition set, three environments, distinguished by a single template varia
 
 | Environment | Objects | DCM project object | Deployed by |
 |---|---|---|---|
-| DEV | `RETAIL_DEMO_DEV.*` | `…MERCH_PERFORMANCE_DEV` | Developer, locally |
-| TEST | `RETAIL_DEMO_TEST.*` | `…MERCH_PERFORMANCE_TEST` | CI on merge to `develop` |
-| PROD | `RETAIL_DEMO.*` | `…MERCH_PERFORMANCE_PROD` | CI on merge to `main`, gated |
+| DEV | `RETAIL_DEMO_DEV.*` | `…SALES_PERFORMANCE_DEV` | Developer, locally |
+| TEST | `RETAIL_DEMO_TEST.*` | `…SALES_PERFORMANCE_TEST` | CI on merge to `develop` |
+| PROD | `RETAIL_DEMO.*` | `…SALES_PERFORMANCE_PROD` | CI on merge to `main`, gated |
 
 **Each environment needs its own DCM project object.** A single project object holds one deployed configuration at a time, so pointing one project at a different configuration *drops the objects from the previous one*. Sharing a project object across environments means deploying PROD deletes DEV.
 
@@ -43,12 +43,12 @@ default_target: dev
 targets:
   dev:
     account_identifier: MYORG-MYACCOUNT
-    project_name: GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_DEV
+    project_name: GOVERNANCE.PROJECTS.SALES_PERFORMANCE_DEV
     project_owner: ACCOUNTADMIN        # demo only; see PROD
     templating_config: DEV
   prod:
     account_identifier: MYORG-MYACCOUNT
-    project_name: GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_PROD
+    project_name: GOVERNANCE.PROJECTS.SALES_PERFORMANCE_PROD
     project_owner: APP_DEPLOYER_PROD   # dedicated role, service users only
     templating_config: PROD
 
@@ -66,13 +66,13 @@ templating:
 ## 3. `DEFINE STREAMLIT`
 
 ```sql
-DEFINE STREAMLIT RETAIL_DEMO{{ env_suffix }}.SERVE.MERCH_PERFORMANCE
-    FROM 'asset://merch_performance/'
+DEFINE STREAMLIT RETAIL_DEMO{{ env_suffix }}.SERVE.SALES_PERFORMANCE
+    FROM 'asset://sales_performance/'
     MAIN_FILE = 'streamlit_app.py'
     QUERY_WAREHOUSE = {{ warehouse }}
     COMPUTE_POOL = SYSTEM_COMPUTE_POOL_CPU
     RUNTIME_NAME = 'SYSTEM$ST_CONTAINER_RUNTIME_PY3_11'
-    TITLE = 'Merch Performance{{ env_suffix }}'
+    TITLE = 'Sales Performance{{ env_suffix }}'
 ;
 ```
 
@@ -91,16 +91,16 @@ Measured behaviour for an app with a `utils/` package:
 
 | Manifest entry | `utils/config.py` materializes as | Result |
 |---|---|---|
-| `'streamlit/merch_performance/utils/config.py'` | `config.py` | **imports break** |
-| `'streamlit/merch_performance/utils/*.py'` | `config.py` | **imports break** |
-| `'streamlit/merch_performance/**/*'` | `utils/config.py` | correct |
+| `'streamlit/sales_performance/utils/config.py'` | `config.py` | **imports break** |
+| `'streamlit/sales_performance/utils/*.py'` | `config.py` | **imports break** |
+| `'streamlit/sales_performance/**/*'` | `utils/config.py` | correct |
 
 So any app with a Python subpackage **requires** the `**` form. An explicit file list flattens the tree, the app deploys without error, and it fails when it starts.
 
 ```yaml
 assets:
-  merch_performance:
-    path: 'streamlit/merch_performance/**/*'
+  sales_performance:
+    path: 'streamlit/sales_performance/**/*'
 ```
 
 Always verify after planning:
@@ -143,7 +143,7 @@ def resolve_environment(conn):
         "database": database,
         "env_label": env_label,
         "is_prod": env_label == "PROD",
-        "serve_view": f"{database}.SERVE.V_MERCH_PERFORMANCE",
+        "serve_view": f"{database}.SERVE.V_SALES_PERFORMANCE",
     }
 ```
 
@@ -172,7 +172,7 @@ Two independent mechanisms:
 **Streamlit versions.** Each deployment creates `VERSION$N`.
 
 ```sql
-SHOW VERSIONS IN STREAMLIT RETAIL_DEMO.SERVE.MERCH_PERFORMANCE;
+SHOW VERSIONS IN STREAMLIT RETAIL_DEMO.SERVE.SALES_PERFORMANCE;
 ```
 
 **Git revert plus redeploy** — the preferred route, because it keeps the repository as the source of truth and leaves an auditable trail:
@@ -188,7 +188,7 @@ Rolling the object back without reverting the repository leaves them divergent, 
 DCM deployment history gives the audit trail:
 
 ```sql
-SHOW DEPLOYMENTS IN DCM PROJECT GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_PROD;
+SHOW DEPLOYMENTS IN DCM PROJECT GOVERNANCE.PROJECTS.SALES_PERFORMANCE_PROD;
 ```
 
 The `alias` is worth setting to the commit SHA or release tag — it is effectively
@@ -248,7 +248,7 @@ Pipeline shape:
 The provenance check keeps the catalog honest — if the deployed object cannot prove its origin, it must not be marked certified:
 
 ```bash
-snow sql -q "SHOW DEPLOYMENTS IN DCM PROJECT GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_PROD" \
+snow sql -q "SHOW DEPLOYMENTS IN DCM PROJECT GOVERNANCE.PROJECTS.SALES_PERFORMANCE_PROD" \
   --format json > deployments.json
 # fail the build if the app is neither DCM-managed nor Git-sourced
 snow sql -q "CALL GOVERNANCE.APPS.SP_AUDIT_STREAMLIT_APPS()"

@@ -13,11 +13,11 @@ A line drawn with naming conventions, wiki pages, or a spreadsheet of "official"
 Snowflake records where a Streamlit app's code came from, on the app object itself, written by the deployment mechanism rather than by a person.
 
 ```sql
-DESCRIBE STREAMLIT CORTEX_AGENTS_DEMO.PUBLIC.CORTEX_AGENT_CHAT_APP;
+DESCRIBE STREAMLIT <db>.<schema>.<app>;
 ```
 
 ```
-default_version_source_location_uri  @...GITHUB_REPO_CORTEX_AGENTS_DEMO/branches/main/agent_app/
+default_version_source_location_uri  @<db>.<schema>.<git_repo>/branches/main/app/
 default_version_git_commit_hash      15e3e34e80cdc1e8d64b34a1d0b8ad206d002c1b
 ```
 
@@ -122,7 +122,7 @@ The point is not to make Tier 3 hard to reach. It is to make the *cost of suppor
 | **Operate** | Monitored via the event table and `snow streamlit logs`. Changes arrive as reviewed PRs. | 3 |
 | **Retire** | Removing the `DEFINE STREAMLIT` statement drops the app on the next deployment. Retirement is a reviewed code change, not a forgotten object. | 3 |
 
-Retirement deserves emphasis. In the audited account, 68 of 82 apps were over a year old and 25 were scratch or debug apps. Nothing in the current process ever removes anything, so the estate only grows. A lifecycle without a retirement step is not a lifecycle.
+Retirement deserves emphasis. In one audited account, roughly 80% of apps were over a year old and about a third were scratch or debug apps. Nothing in the current process ever removes anything, so the estate only grows. A lifecycle without a retirement step is not a lifecycle.
 
 ## 5. What this preserves
 

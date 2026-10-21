@@ -5,7 +5,7 @@
 -- proves the loop actually closes: an edit in the repository becomes a new
 -- deployed version, and the account can name the commit it came from.
 --
--- This is the beat that answers "why did the analysts leave Sigma" -- the
+-- This is the beat that answers "why would analysts leave a BI tool for this"
 -- answer is a reviewable diff and a rollback target, not a nicer chart.
 --
 -- RUN ORDER matters. Steps 1-2 happen in a terminal, the rest in Snowflake.
@@ -14,7 +14,7 @@
 --
 -- PREREQUISITES
 --   GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO   Git repository object
---   GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_DEV DCM project object
+--   GOVERNANCE.PROJECTS.SALES_PERFORMANCE_DEV DCM project object
 --   A warehouse. The audit and the FETCH both need compute.
 -- ============================================================================
 
@@ -22,7 +22,7 @@
 -- ----------------------------------------------------------------------------
 -- STEP 1 (terminal) -- Make a visible change and push it
 -- ----------------------------------------------------------------------------
--- Edit demo_app/streamlit/merch_performance/streamlit_app.py, then:
+-- Edit demo_app/streamlit/sales_performance/streamlit_app.py, then:
 --
 --   git add -A
 --   git commit -m "Add provenance footer"
@@ -83,7 +83,7 @@ LIST @GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO/branches/main/demo_app/;
 -- BEAT 3 -- PLAN first. Always.
 -- ----------------------------------------------------------------------------
 -- Deploy from the TAG, not from branches/main. Beat 5 explains why.
-EXECUTE DCM PROJECT GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_DEV
+EXECUTE DCM PROJECT GOVERNANCE.PROJECTS.SALES_PERFORMANCE_DEV
     PLAN
     USING CONFIGURATION DEV
     FROM '@GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO/tags/v0.1.0/demo_app/';
@@ -96,7 +96,7 @@ FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
 --   "changeset": [{
 --       "type": "ALTER",
 --       "object_id": { "domain": "STREAMLIT",
---                      "fqn": "RETAIL_DEMO_DEV.SERVE.MERCH_PERFORMANCE" },
+--                      "fqn": "RETAIL_DEMO_DEV.SERVE.SALES_PERFORMANCE" },
 --       "changes": [{ "attribute_name": "default_version_name",
 --                     "kind": "changed",
 --                     "prev_value": "VERSION$3", "value": "VERSION$4" }]
@@ -107,7 +107,7 @@ FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
 -- database, schemas, table, view and roles are all declared in the same
 -- project and all correctly no-ops.
 --
--- This is the moment to make the Sigma comparison explicit. The question
+-- This is the moment to make the comparison with a BI tool explicit. The question
 -- "what is about to change in production, and who approved it" has a literal
 -- answer here, before anything is applied.
 
@@ -118,7 +118,7 @@ FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
 -- The alias is the deployment's commit message. Put the tag or SHA in it: it
 -- is the first field a human reads in the history, and it is the only one
 -- written by a person rather than derived.
-EXECUTE DCM PROJECT GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_DEV
+EXECUTE DCM PROJECT GOVERNANCE.PROJECTS.SALES_PERFORMANCE_DEV
     DEPLOY AS "release-v0.1.0"
     USING CONFIGURATION DEV
     FROM '@GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO/tags/v0.1.0/demo_app/';
@@ -127,7 +127,7 @@ EXECUTE DCM PROJECT GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_DEV
 -- ----------------------------------------------------------------------------
 -- BEAT 5 -- The deployment history, and the trap inside it
 -- ----------------------------------------------------------------------------
-SHOW DEPLOYMENTS IN DCM PROJECT GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_DEV;
+SHOW DEPLOYMENTS IN DCM PROJECT GOVERNANCE.PROJECTS.SALES_PERFORMANCE_DEV;
 
 -- Live result, oldest last. Read the source_file_path column top to bottom --
 -- it is a ladder of provenance quality:
@@ -164,19 +164,19 @@ SHOW DEPLOYMENTS IN DCM PROJECT GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_DEV;
 -- <snowgit_commit_uri> }, and neither of those works.
 
 -- Rejected -- "Invalid git branch path: tags/v0.1.0/…"
-ALTER STREAMLIT GOVERNANCE.APPS.MERCH_PERFORMANCE_GITDIRECT
+ALTER STREAMLIT GOVERNANCE.APPS.SALES_PERFORMANCE_GITDIRECT
     ADD VERSION "rel_v0_1_0"
-    FROM '@GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO/tags/v0.1.0/demo_app/streamlit/merch_performance/';
+    FROM '@GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO/tags/v0.1.0/demo_app/streamlit/sales_performance/';
 
 -- Also rejected, at any depth, including the bare commit root.
-ALTER STREAMLIT GOVERNANCE.APPS.MERCH_PERFORMANCE_GITDIRECT
+ALTER STREAMLIT GOVERNANCE.APPS.SALES_PERFORMANCE_GITDIRECT
     ADD VERSION "by_commit"
-    FROM '@GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO/commits/1628c7bfca13f970aca0c9e53de3a50070de6ee3/demo_app/streamlit/merch_performance/';
+    FROM '@GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO/commits/1628c7bfca13f970aca0c9e53de3a50070de6ee3/demo_app/streamlit/sales_performance/';
 
 -- Accepted. Only branches/ works for the Streamlit commands.
-ALTER STREAMLIT GOVERNANCE.APPS.MERCH_PERFORMANCE_GITDIRECT
+ALTER STREAMLIT GOVERNANCE.APPS.SALES_PERFORMANCE_GITDIRECT
     ADD VERSION "provenance_footer"
-    FROM '@GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO/branches/main/demo_app/streamlit/merch_performance/'
+    FROM '@GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO/branches/main/demo_app/streamlit/sales_performance/'
     COMMENT = 'Branch path resolves to a concrete commit at add time';
 
 --   EXECUTE DCM PROJECT … FROM        branches/  commits/  tags/     all work
@@ -194,7 +194,7 @@ ALTER STREAMLIT GOVERNANCE.APPS.MERCH_PERFORMANCE_GITDIRECT
 -- ----------------------------------------------------------------------------
 -- BEAT 7 -- The best provenance artifact in the product
 -- ----------------------------------------------------------------------------
-SHOW VERSIONS IN STREAMLIT GOVERNANCE.APPS.MERCH_PERFORMANCE_GITDIRECT;
+SHOW VERSIONS IN STREAMLIT GOVERNANCE.APPS.SALES_PERFORMANCE_GITDIRECT;
 
 -- Live result:
 --   VERSION$3 | provenance_footer | is_default | 1628c7bfca13f970aca0c9e53de3a50070de6ee3
@@ -233,15 +233,15 @@ WHERE PROVENANCE <> 'NONE'
 ORDER BY PROVENANCE, APP_NAME;
 
 -- Live result:
---   MERCH_PERFORMANCE           | DCM_MANAGED | TAG | 1628c7bfca13 | FALSE | CERTIFIED
---   CORTEX_AGENT_CHAT_APP       | GIT_DIRECT  | -   | 15e3e34e80cd | FALSE | CERTIFIED
---   MERCH_PERFORMANCE_GITDIRECT | GIT_DIRECT  | -   | 1628c7bfca13 | FALSE | CERTIFIED
+--   SALES_PERFORMANCE           | DCM_MANAGED | TAG | 1628c7bfca13 | FALSE | CERTIFIED
+--   <a pre-existing git app>    | GIT_DIRECT  | -   | 15e3e34e80cd | FALSE | CERTIFIED
+--   SALES_PERFORMANCE_GITDIRECT | GIT_DIRECT  | -   | 1628c7bfca13 | FALSE | CERTIFIED
 --
 -- The two apps built from this repository report the SAME commit by two
 -- completely different mechanisms:
 --
---   MERCH_PERFORMANCE_GITDIRECT  read from the app object's own commit hash
---   MERCH_PERFORMANCE            recovered from the DCM deployment's
+--   SALES_PERFORMANCE_GITDIRECT  read from the app object's own commit hash
+--   SALES_PERFORMANCE            recovered from the DCM deployment's
 --                                source_file_path -> tag -> SHOW GIT TAGS
 --
 -- Nobody typed either value. That is the whole argument: provenance is a
@@ -253,8 +253,10 @@ SELECT TOTAL_APPS, NO_PROVENANCE, PCT_UNGOVERNED,
        TRACEABLE_TO_COMMIT, GOVERNED_NOT_TRACEABLE
 FROM GOVERNANCE.APPS.V_STREAMLIT_SPRAWL_SUMMARY;
 
--- Live result: 85 apps, 82 with no provenance (96.5%), 3 traceable to a commit.
+-- Example result: ~85 apps, all but three with no provenance, 3 traceable to
+-- a commit.
 --
--- The three traceable apps are the two built here plus one pre-existing app
--- someone had already done correctly. Everything else is unattributable, and
--- that is the support load the data engineering team is absorbing today.
+-- The three traceable apps were the two built by this repo plus one pre-existing
+-- app someone had already done correctly. Everything else was unattributable,
+-- and that is the support load a platform team absorbs by default. Your own
+-- numbers come from the summary view above.

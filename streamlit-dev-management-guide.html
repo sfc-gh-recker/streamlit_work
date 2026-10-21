@@ -12,16 +12,16 @@
     "intent": "Field guide for Streamlit in Snowflake development, Git integration, promotion, and governance. Supersedes an earlier internal best-practices guide (Feb 2026), correcting its password-auth CI/CD example and bare --replace deployment guidance.",
     "audience": "Data engineering and platform teams",
     "dataSources": [
-      { "type": "query", "warehouse": "SNOW_INTELLIGENCE_DEMO_WH",
+      { "type": "query", "warehouse": "ANALYTICS_WH",
         "sql": "SELECT * FROM GOVERNANCE.APPS.V_STREAMLIT_SPRAWL_SUMMARY" }
     ],
     "sections": [
       { "id": "audit", "title": "What an audit finds",
         "dataSources": [{ "type": "query", "sql": "SELECT * FROM GOVERNANCE.APPS.V_STREAMLIT_SPRAWL_SUMMARY" }],
-        "producerNotes": "Chart and table values are inlined from a live run against a demo account on 2026-09-28 (82 pre-existing apps). Re-run CALL GOVERNANCE.APPS.SP_AUDIT_STREAMLIT_APPS() then the summary view to refresh." },
+        "producerNotes": "Chart and table values are an illustrative sample from one anonymized account of roughly 80 apps. Re-run CALL GOVERNANCE.APPS.SP_AUDIT_STREAMLIT_APPS() then the summary view to get your own numbers." },
       { "id": "provenance", "title": "The governance signal",
-        "dataSources": [{ "type": "query", "sql": "DESCRIBE STREAMLIT CORTEX_AGENTS_DEMO.PUBLIC.CORTEX_AGENT_CHAT_APP" }],
-        "producerNotes": "Commit hash 15e3e34e is a real value read off a deployed app in this account." },
+        "dataSources": [{ "type": "query", "sql": "DESCRIBE STREAMLIT <db>.<schema>.<app>" }],
+        "producerNotes": "Commit hash 15e3e34e is a real value read off a deployed app, shown to illustrate the shape of the output." },
       { "id": "tiers", "title": "The three-tier model", "producerNotes": "Static mermaid diagram; no data source." },
       { "id": "limitations", "title": "Verified limitations",
         "producerNotes": "Each row was reproduced empirically in Sept 2026, not taken from documentation. Update only if re-tested." }
@@ -129,7 +129,7 @@
 
 <h1>Streamlit Development &amp; Management on Snowflake</h1>
 <p class="lede">Development, Git integration, promotion, and governance for Streamlit in Snowflake at enterprise scale.</p>
-<p class="byline">Rich Ecker, Solutions Engineering &middot; September 2026</p>
+<p class="byline">General guidance for teams deploying and governing Streamlit in Snowflake &middot; September 2026</p>
 
 <p class="supersede">
   Supersedes an earlier internal best-practices guide (February 2026). Two items in that
@@ -185,9 +185,9 @@
   deployment mechanism rather than by a person.
 </p>
 
-<pre><code><span class="kw">DESCRIBE STREAMLIT</span> CORTEX_AGENTS_DEMO.PUBLIC.CORTEX_AGENT_CHAT_APP;</code></pre>
+<pre><code><span class="kw">DESCRIBE STREAMLIT</span> &lt;db&gt;.&lt;schema&gt;.&lt;app&gt;;</code></pre>
 
-<pre><code>default_version_source_location_uri  @...GITHUB_REPO_CORTEX_AGENTS_DEMO/branches/main/agent_app/
+<pre><code>default_version_source_location_uri  @&lt;db&gt;.&lt;schema&gt;.&lt;git_repo&gt;/branches/main/app/
 default_version_git_commit_hash      15e3e34e80cdc1e8d64b34a1d0b8ad206d002c1b</code></pre>
 
 <p>
@@ -251,13 +251,13 @@ default_version_git_commit_hash      15e3e34e80cdc1e8d64b34a1d0b8ad206d002c1b</c
 <p>
   There is no <code>ACCOUNT_USAGE</code> view for Streamlit, so an inventory has to loop
   <code>SHOW STREAMLITS</code> plus <code>DESCRIBE STREAMLIT</code> into a table. Run against a real
-  account of 82 apps, that produced:
+  account of roughly 80 apps, that produced the following. Treat these as an illustrative sample from one anonymized estate, not a benchmark:
 </p>
 
 <div class="kpis">
   <div class="kpi"><div class="n">81</div><div class="l">Streamlit apps</div></div>
-  <div class="kpi alarm"><div class="n">81</div><div class="l">No provenance (98.8%)</div></div>
-  <div class="kpi alarm"><div class="n">60</div><div class="l">Legacy source model (73%)</div></div>
+  <div class="kpi alarm"><div class="n">~98%</div><div class="l">No provenance</div></div>
+  <div class="kpi alarm"><div class="n">~75%</div><div class="l">Legacy source model</div></div>
   <div class="kpi good"><div class="n">2</div><div class="l">Certified</div></div>
 </div>
 
@@ -266,9 +266,9 @@ default_version_git_commit_hash      15e3e34e80cdc1e8d64b34a1d0b8ad206d002c1b</c
 <p>Three of these change how you plan:</p>
 
 <ul>
-  <li><strong>81 of 82 have no provenance.</strong> When one breaks there is no diff to read and no commit to roll back to. That is the support-load problem in one number.</li>
-  <li><strong>60 of 82 use the legacy <code>ROOT_LOCATION</code> source model.</strong> Those apps <em>cannot</em> use Git integration or the container runtime at all. This is a hard technical ceiling, not a process gap — three quarters of the estate must be migrated to <code>FROM</code> before a Git workflow applies to them. Any plan that says "start using Git" understates the work by that number.</li>
-  <li><strong>82 of 82 have no exact version pin.</strong> Range pins silently do not take effect, so every app can change behaviour with no code edit.</li>
+  <li><strong>Almost nothing has provenance.</strong> When one breaks there is no diff to read and no commit to roll back to. That is the support-load problem in one number.</li>
+  <li><strong>Roughly three quarters use the legacy <code>ROOT_LOCATION</code> source model.</strong> Those apps <em>cannot</em> use Git integration or the container runtime at all. This is a hard technical ceiling, not a process gap — three quarters of the estate must be migrated to <code>FROM</code> before a Git workflow applies to them. Any plan that says "start using Git" understates the work by that number.</li>
+  <li><strong>Nothing is version-pinned exactly.</strong> Range pins silently do not take effect, so every app can change behaviour with no code edit.</li>
 </ul>
 
 <div class="box info">
@@ -321,7 +321,7 @@ flowchart LR
 │   ├── pipeline.sql              <span class="cmt"># DEFINE TABLE / VIEW</span>
 │   ├── access.sql                <span class="cmt"># DEFINE ROLE + GRANT</span>
 │   └── dashboard.sql             <span class="cmt"># DEFINE STREAMLIT</span>
-└── streamlit/merch_performance/
+└── streamlit/sales_performance/
     ├── streamlit_app.py          <span class="cmt"># entry point — UI only</span>
     ├── requirements.txt          <span class="cmt"># exact pins</span>
     └── utils/
@@ -360,7 +360,7 @@ flowchart LR
 
 <div class="box danger">
   <div class="box-title">80% of audited apps are owned by an admin role</div>
-  64 of 82 apps are owned by <code>ACCOUNTADMIN</code>, <code>SYSADMIN</code>, or
+  Roughly 80% of apps are owned by <code>ACCOUNTADMIN</code>, <code>SYSADMIN</code>, or
   <code>SECURITYADMIN</code>. Each hands admin-level reach to everyone who can open the dashboard.
   This is the highest-severity finding in the estate, ahead of the provenance gap — and because
   <strong>Streamlit ownership cannot be transferred</strong>, those apps must be
@@ -520,7 +520,7 @@ DATABASE = <span class="bad">"RETAIL_DEMO_DEV"</span></code></pre>
   <div class="box-title">Pin exact versions. Never ranges.</div>
   Range pins such as <code>streamlit&gt;=1.39.0</code> do <strong>not</strong> reliably take effect
   on the warehouse runtime (see https://docs.snowflake.com/en/developer-guide/streamlit/app-development/dependency-management). The app runs on whatever the runtime picks, and that can
-  change with no code edit and no deployment. <strong>82 of 82 audited apps have no exact pin.</strong>
+  change with no code edit and no deployment. <strong>Every app in the sampled estate had no exact pin.</strong>
   This is not hypothetical — the filter-state bug investigated in September reproduced on deployed
   SiS but not on local Streamlit 1.50, because the deployed version was not what the developer
   assumed.
@@ -668,7 +668,7 @@ st.button(<span class="str">"Clear filters"</span>, on_click=_clear_filters)</co
 <footer>
   Prepared by Rich Ecker, Solutions Engineering — Snowflake.<br />
   Supersedes an earlier internal best-practices guide (February 2026).<br />
-  Findings measured against a live account of 82 Streamlit apps on 28 September 2026.
+  Proportions are an illustrative sample from one anonymized account of roughly 80 Streamlit apps.
 </footer>
 
 <script src="/libs/chart.js@4.4.4/chart.umd.js"></script>
@@ -688,8 +688,8 @@ st.button(<span class="str">"Clear filters"</span>, on_click=_clear_filters)</co
         'Legacy ROOT_LOCATION', 'Never named', 'Scratch / debug', 'Duplicate'
       ],
       datasets: [{
-        label: 'Apps affected (of 82)',
-        data: [79, 73, 68, 65, 60, 58, 23, 3],
+        label: 'Share of estate affected (%)',
+        data: [98, 89, 83, 78, 73, 71, 30, 4],
         backgroundColor: isDark ? '#38BDF8' : '#29B5E8',
         borderRadius: 3
       }]
@@ -701,7 +701,7 @@ st.button(<span class="str">"Clear filters"</span>, on_click=_clear_filters)</co
       plugins: { legend: { display: false } },
       scales: {
         x: {
-          beginAtZero: true, max: 81,
+          beginAtZero: true, max: 100,
           grid: { color: gridColor }, ticks: { color: tickColor }
         },
         y: { grid: { display: false }, ticks: { color: tickColor } }

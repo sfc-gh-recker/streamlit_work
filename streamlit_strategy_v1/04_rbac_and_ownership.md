@@ -10,7 +10,7 @@ That single fact drives everything in this document:
 - `CURRENT_ROLE()` inside the app returns the **owner's** role. Row access policies keyed on `CURRENT_ROLE()` do **not** segment viewers under owner's rights.
 - Viewers need no grants on the underlying data. That is the main ergonomic benefit, and the right default for a reporting dashboard.
 
-Measured on the audited account: **64 of 82 apps (78%) are owned by `ACCOUNTADMIN`, `SYSADMIN`, or `SECURITYADMIN`.** Each of those hands admin-level reach to everyone who can open the dashboard. This is the single highest-severity finding in the estate, ahead of the provenance gap.
+In one audited account, roughly **80% of apps were owned by `ACCOUNTADMIN`, `SYSADMIN`, or `SECURITYADMIN`.** Each of those hands admin-level reach to everyone who can open the dashboard. This is the single highest-severity finding in the estate, ahead of the provenance gap.
 
 ```sql
 SELECT FULL_NAME, OWNER_ROLE, AGE_DAYS
@@ -46,7 +46,7 @@ So there is no transfer path at all. Per the owner's-rights documentation, *"whe
 ```yaml
 targets:
   prod:
-    project_owner: APP_MERCH_OWNER     # this decides what viewers can reach
+    project_owner: APP_RETAIL_OWNER     # this decides what viewers can reach
 ```
 
 **For the 65 admin-owned apps:** they cannot be re-owned. They must be **recreated** under the correct role. Combine this with the legacy `ROOT_LOCATION` migration from [02](02_git_strategy.md) — both require recreating the app, so do them in one pass rather than twice.
@@ -62,7 +62,7 @@ A single DCM project that creates *both* the infrastructure (database, schemas, 
 Observed concretely: the reference app in this repo was deployed by a single DCM project whose `project_owner` was `ACCOUNTADMIN`. Everything about it is otherwise correct — Git-backed, CI/CD-deployed, least-privilege serving view, full provenance. The certification procedure still refused it:
 
 ```
-CALL GOVERNANCE.APPS.SP_CERTIFY_APP('RETAIL_DEMO_DEV.SERVE.MERCH_PERFORMANCE', 'Rich Ecker');
+CALL GOVERNANCE.APPS.SP_CERTIFY_APP('RETAIL_DEMO_DEV.SERVE.SALES_PERFORMANCE', 'Rich Ecker');
 
 NOT CERTIFIED: owned by an admin role -- viewers would inherit admin rights.
 Ownership cannot be transferred; recreate under a functional role
@@ -83,7 +83,7 @@ Deploy infrastructure first, then the app:
 
 ```bash
 snow dcm deploy --from ./infra    --target prod   # as APP_PLATFORM_DEPLOYER
-snow dcm deploy --from ./app      --target prod   # as APP_MERCH_OWNER
+snow dcm deploy --from ./app      --target prod   # as APP_RETAIL_OWNER
 ```
 
 The cost is two projects and an ordering dependency between them. The benefit is that the role your executives' dashboard runs as cannot create a database. Given that ownership is permanent, paying this cost at design time is much cheaper than discovering it after a hundred apps are deployed.
@@ -113,17 +113,17 @@ SYSADMIN
 The owner role should read the **serving view and nothing else**. Deliberately excluding the base schema means a bug in the app cannot expose base tables.
 
 ```sql
-CREATE ROLE IF NOT EXISTS APP_MERCH_OWNER;
+CREATE ROLE IF NOT EXISTS APP_RETAIL_OWNER;
 
-GRANT USAGE  ON DATABASE RETAIL_DEMO              TO ROLE APP_MERCH_OWNER;
-GRANT USAGE  ON SCHEMA   RETAIL_DEMO.SERVE        TO ROLE APP_MERCH_OWNER;
-GRANT SELECT ON VIEW     RETAIL_DEMO.SERVE.V_MERCH_PERFORMANCE
-                                                     TO ROLE APP_MERCH_OWNER;
-GRANT USAGE  ON WAREHOUSE MY_WH                      TO ROLE APP_MERCH_OWNER;
+GRANT USAGE  ON DATABASE RETAIL_DEMO              TO ROLE APP_RETAIL_OWNER;
+GRANT USAGE  ON SCHEMA   RETAIL_DEMO.SERVE        TO ROLE APP_RETAIL_OWNER;
+GRANT SELECT ON VIEW     RETAIL_DEMO.SERVE.V_SALES_PERFORMANCE
+                                                     TO ROLE APP_RETAIL_OWNER;
+GRANT USAGE  ON WAREHOUSE MY_WH                      TO ROLE APP_RETAIL_OWNER;
 
 -- Container runtime only. Omitting this is a common cause of an app that
 -- deploys cleanly and then fails to start.
-GRANT USAGE  ON COMPUTE POOL SYSTEM_COMPUTE_POOL_CPU TO ROLE APP_MERCH_OWNER;
+GRANT USAGE  ON COMPUTE POOL SYSTEM_COMPUTE_POOL_CPU TO ROLE APP_RETAIL_OWNER;
 ```
 
 Note there is **no** grant on `RETAIL_DEMO.CORE`.
@@ -131,20 +131,20 @@ Note there is **no** grant on `RETAIL_DEMO.CORE`.
 ### Viewer
 
 ```sql
-CREATE ROLE IF NOT EXISTS APP_MERCH_VIEWER;
+CREATE ROLE IF NOT EXISTS APP_RETAIL_VIEWER;
 
-GRANT USAGE ON DATABASE  RETAIL_DEMO       TO ROLE APP_MERCH_VIEWER;
-GRANT USAGE ON SCHEMA    RETAIL_DEMO.SERVE TO ROLE APP_MERCH_VIEWER;
-GRANT USAGE ON STREAMLIT RETAIL_DEMO.SERVE.MERCH_PERFORMANCE
-                                              TO ROLE APP_MERCH_VIEWER;
-GRANT USAGE ON WAREHOUSE MY_WH                TO ROLE APP_MERCH_VIEWER;
+GRANT USAGE ON DATABASE  RETAIL_DEMO       TO ROLE APP_RETAIL_VIEWER;
+GRANT USAGE ON SCHEMA    RETAIL_DEMO.SERVE TO ROLE APP_RETAIL_VIEWER;
+GRANT USAGE ON STREAMLIT RETAIL_DEMO.SERVE.SALES_PERFORMANCE
+                                              TO ROLE APP_RETAIL_VIEWER;
+GRANT USAGE ON WAREHOUSE MY_WH                TO ROLE APP_RETAIL_VIEWER;
 ```
 
 To make certified apps visible automatically as they are added:
 
 ```sql
 GRANT USAGE ON FUTURE STREAMLITS IN SCHEMA RETAIL_DEMO.SERVE
-  TO ROLE APP_MERCH_VIEWER;
+  TO ROLE APP_RETAIL_VIEWER;
 ```
 
 In managed-access schemas, future grants may need administering explicitly.
@@ -182,7 +182,7 @@ Worth auditing the actual request rather than accepting the stated one — it is
 If a warehouse-runtime app calls any context function, or reads a table with a row access policy, grant the owner role the global `READ SESSION` privilege:
 
 ```sql
-GRANT READ SESSION ON ACCOUNT TO ROLE APP_MERCH_OWNER;
+GRANT READ SESSION ON ACCOUNT TO ROLE APP_RETAIL_OWNER;
 ```
 
 Without it the app fails at runtime with an error that does not obviously point at this.

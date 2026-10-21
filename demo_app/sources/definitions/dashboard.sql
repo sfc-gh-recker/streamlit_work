@@ -14,8 +14,8 @@
 --     That is the intended lifecycle: retirement is a reviewed code change.
 -- ============================================================================
 
-DEFINE STREAMLIT RETAIL_DEMO{{ env_suffix }}.SERVE.MERCH_PERFORMANCE
-    FROM 'asset://merch_performance/'
+DEFINE STREAMLIT RETAIL_DEMO{{ env_suffix }}.SERVE.SALES_PERFORMANCE
+    FROM 'asset://sales_performance/'
     MAIN_FILE = 'streamlit_app.py'
     QUERY_WAREHOUSE = {{ warehouse }}
     -- Declared EXPLICITLY rather than relying on the default. Verified: when
@@ -26,8 +26,8 @@ DEFINE STREAMLIT RETAIL_DEMO{{ env_suffix }}.SERVE.MERCH_PERFORMANCE
     -- deliberate choice instead of a consequence of a default.
     COMPUTE_POOL = SYSTEM_COMPUTE_POOL_CPU
     RUNTIME_NAME = 'SYSTEM$ST_CONTAINER_RUNTIME_PY3_11'
-    TITLE = 'Merch Performance{{ env_suffix }}'
-    COMMENT = 'League and channel merch performance. Deployed via DCM project MERCH_PERFORMANCE{{ env_suffix }}.'
+    TITLE = 'Sales Performance{{ env_suffix }}'
+    COMMENT = 'Sales performance by product line and channel. Deployed via DCM project SALES_PERFORMANCE{{ env_suffix }}.'
 ;
 
 -- ----------------------------------------------------------------------------

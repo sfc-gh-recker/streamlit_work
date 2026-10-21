@@ -1,5 +1,5 @@
 # ============================================================================
-# Deploy Merch Performance via DCM Projects
+# Deploy Sales Performance via DCM Projects
 # ============================================================================
 # Two corrections to the CI/CD pattern in the February best-practices guide,
 # both of which matter in production:
@@ -22,7 +22,7 @@
 # before it is applied. DEPLOY runs only on the protected branch.
 # ============================================================================
 
-name: Deploy Merch Performance
+name: Deploy Sales Performance
 
 on:
   pull_request:
@@ -150,7 +150,7 @@ jobs:
           SNOWFLAKE_AUTHENTICATOR: SNOWFLAKE_JWT
           SNOWFLAKE_PRIVATE_KEY_PATH: /home/runner/.snowflake/rsa_key.p8
         run: |
-          snow sql -q "DESCRIBE STREAMLIT RETAIL_DEMO.SERVE.MERCH_PERFORMANCE" \
+          snow sql -q "DESCRIBE STREAMLIT RETAIL_DEMO.SERVE.SALES_PERFORMANCE" \
             --format json > describe.json
           python - <<'PY'
           import json, sys

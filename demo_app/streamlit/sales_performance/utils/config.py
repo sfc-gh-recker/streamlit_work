@@ -1,5 +1,5 @@
 """
-Environment configuration for the Merch Performance dashboard.
+Environment configuration for the Sales Performance dashboard.
 
 THE IMPORTANT CONSTRAINT
 ------------------------
@@ -54,7 +54,7 @@ def resolve_environment(conn) -> dict:
         "database": database,
         "env_label": env_label,
         "is_prod": env_label == "PROD",
-        "serve_view": f"{database}.SERVE.V_MERCH_PERFORMANCE",
+        "serve_view": f"{database}.SERVE.V_SALES_PERFORMANCE",
     }
 
 
@@ -103,7 +103,7 @@ def resolve_provenance(conn, env: dict) -> dict:
     So this reads the object first and falls back to the governance inventory,
     which already reconciles both paths into COMMIT_SHA.
     """
-    fqn = f"{env['database']}.SERVE.MERCH_PERFORMANCE"
+    fqn = f"{env['database']}.SERVE.SALES_PERFORMANCE"
     out = {"version": None, "commit": None, "source": None}
 
     try:

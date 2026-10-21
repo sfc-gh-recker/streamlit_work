@@ -16,7 +16,7 @@ That last row deserves a caveat: editing in Snowsight breaks the link between th
 
 ### On folders and sprawl
 
-The instinct when facing 82 apps is to ask for folders. Folders would not have prevented this — 58 of those apps were never even named. Sprawl is a **lifecycle** problem, not a filing problem, and the answer is the tier model plus the audit plus a retirement step.
+The instinct when facing an estate this size is to ask for folders. Folders would not have prevented it — most of those apps were never even named. Sprawl is a **lifecycle** problem, not a filing problem, and the answer is the tier model plus the audit plus a retirement step.
 
 The internal design work deliberately avoids forcing every small app into a rigid structure, and that is correct: a single-file experiment is a legitimate Tier 1 use case and adding ceremony to it would just push people back to spreadsheets. Organization comes from four things:
 
@@ -64,7 +64,7 @@ DEFINE STREAMLIT ...
 
 Range pins such as `streamlit>=1.39.0` do **not** reliably take effect on the warehouse runtime (see https://docs.snowflake.com/en/developer-guide/streamlit/app-development/dependency-management). The app runs on whatever the runtime picks, and that can change with no code edit and no deployment.
 
-Measured on the audited account: **82 of 82 apps have no exact pin.** Every one can change behaviour underneath its owner.
+In one audited account, **every app lacked an exact pin.** Every one can change behaviour underneath its owner.
 
 This is not hypothetical. The filter-state bug investigated in September reproduced on deployed SiS but not on local Streamlit 1.50 — because the deployed runtime version was not what the developer assumed. Time spent diagnosing a version mismatch as a logic bug is the real cost of an unpinned dependency.
 
@@ -179,7 +179,7 @@ snow streamlit logs MY_APP --follow
 This is the direct answer to "apps break and we find out from the business". Combine with an event table for production apps so errors are queryable and alertable rather than discovered:
 
 ```sql
-ALTER STREAMLIT RETAIL_DEMO.SERVE.MERCH_PERFORMANCE
+ALTER STREAMLIT RETAIL_DEMO.SERVE.SALES_PERFORMANCE
   SET LOG_LEVEL = 'INFO';
 ```
 
@@ -207,7 +207,7 @@ snow streamlit share MY_APP --to-role ANALYST
 snow dcm create --target dev
 snow dcm plan   --target dev --save-output
 snow dcm deploy --target dev --alias "$(git rev-parse --short HEAD)"
-snow dcm list-deployments GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_DEV
+snow dcm list-deployments GOVERNANCE.PROJECTS.SALES_PERFORMANCE_DEV
 
 snow git fetch MY_DB.MY_SCHEMA.MY_REPO
 snow git list-branches MY_DB.MY_SCHEMA.MY_REPO

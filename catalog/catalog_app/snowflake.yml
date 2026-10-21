@@ -7,7 +7,7 @@ entities:
       database: GOVERNANCE
       schema: APPS
     main_file: streamlit_app.py
-    query_warehouse: SNOW_INTELLIGENCE_DEMO_WH
+    query_warehouse: ANALYTICS_WH
     artifacts:
       - streamlit_app.py
       - requirements.txt

@@ -10,25 +10,37 @@
 -- opening beat of the session, and as the fallback if the live end-to-end
 -- deployment (demo/02_git_deploy.sh) cannot be run.
 --
--- All output below was captured live on a demo account on 2026-09-28.
+-- The outputs below are an example from one account. Your own object names
+-- and counts will differ; beat 1 shows how to find the equivalent app in your
+-- account rather than hardcoding one.
 -- ============================================================================
 
 
 -- ----------------------------------------------------------------------------
 -- BEAT 1 -- A governed app. Where did this code come from?
 -- ----------------------------------------------------------------------------
-DESCRIBE STREAMLIT CORTEX_AGENTS_DEMO.PUBLIC.CORTEX_AGENT_CHAT_APP;
+-- First find one in your own account. If this returns no rows, skip to beat 3:
+-- an estate with zero governed apps is itself the finding, and the rest of the
+-- demo still works.
+SELECT FULL_NAME, GIT_BRANCH, SUBSTR(COMMIT_SHA, 1, 12) AS commit_sha
+FROM GOVERNANCE.APPS.V_STREAMLIT_INVENTORY_LATEST
+WHERE PROVENANCE = 'GIT_DIRECT'
+ORDER BY FULL_NAME
+LIMIT 5;
 
--- Look at three columns in the output:
+-- Then describe one of them.
+DESCRIBE STREAMLIT <db>.<schema>.<app>;        -- <- paste a FULL_NAME from above
+
+-- Look at three columns in the output. Example values from one account:
 --
 --   default_version_source_location_uri
---     @CORTEX_AGENTS_DEMO.PUBLIC.GITHUB_REPO_CORTEX_AGENTS_DEMO/branches/main/agent_app/
+--     @<db>.<schema>.<git_repo>/branches/main/agent_app/
 --
 --   default_version_git_commit_hash
 --     15e3e34e80cdc1e8d64b34a1d0b8ad206d002c1b
 --
 --   live_version_location_uri
---     snow://streamlit/CORTEX_AGENTS_DEMO.PUBLIC.CORTEX_AGENT_CHAT_APP/versions/live/
+--     snow://streamlit/<db>.<schema>.<app>/versions/live/
 --
 -- Snowflake is telling you the repository, the branch, and the exact commit
 -- this running app was built from. You can go to that commit in GitHub and
@@ -43,12 +55,20 @@ DESCRIBE STREAMLIT CORTEX_AGENTS_DEMO.PUBLIC.CORTEX_AGENT_CHAT_APP;
 -- ----------------------------------------------------------------------------
 -- BEAT 2 -- An ungoverned app. Same question.
 -- ----------------------------------------------------------------------------
-DESCRIBE STREAMLIT AMBIENT_AGENTS_DB.PUBLIC.BARE_MINIMUM;
+-- Find a legacy app in your account. In most estates this returns the majority
+-- of rows, which is the point.
+SELECT FULL_NAME, OWNER_ROLE, AGE_DAYS
+FROM GOVERNANCE.APPS.V_STREAMLIT_INVENTORY_LATEST
+WHERE SOURCE_MODEL = 'ROOT_LOCATION'
+ORDER BY AGE_DAYS DESC
+LIMIT 5;
+
+DESCRIBE STREAMLIT <db>.<schema>.<app>;        -- <- paste a FULL_NAME from above
 
 -- This returns only 13 columns. There is no git_commit_hash column at all,
 -- and no live_version_location_uri. What it has instead is:
 --
---   root_location    @AMBIENT_AGENTS_DB.PUBLIC.STREAMLIT_STAGE
+--   root_location    @<db>.<schema>.<some_stage>
 --
 -- Two separate problems, and it is worth being precise about which is which:
 --
@@ -92,22 +112,22 @@ FROM GOVERNANCE.APPS.V_STREAMLIT_SPRAWL_SUMMARY;
 --
 -- Three of these numbers deserve to be said out loud:
 --
---   81 of 82 have no provenance. If any of these breaks, there is no diff to
+--   Nearly every app has no provenance. If one breaks, there is no diff to
 --   read and no commit to roll back to. That is the support-load problem
 --   stated precisely: data engineering is being asked to fix things that have
 --   no history.
 --
---   60 of 82 are on the legacy source model. This is the one that changes
+--   Roughly 3/4 are on the legacy source model. This is the one that changes
 --   sequencing. Three quarters of the estate cannot adopt a Git workflow
 --   without being migrated first. Any plan that assumes "just start using
 --   Git" is understating the work by the size of that number.
 --
---   82 of 82 have no exact Streamlit version pin. Range pins such as
+--   No app has an exact Streamlit version pin. Range pins such as
 --   streamlit>=1.39.0 silently do not take effect on the warehouse runtime
 --   (see https://docs.snowflake.com/en/developer-guide/streamlit/app-development/dependency-management). Every one of these apps can change behaviour underneath
 --   its owner without a single line of code being edited. This is not
 --   hypothetical: it is the class of problem behind the filter-state bug on
---   a customer app in September, which reproduced on deployed SiS but not
+--   a deployed app investigated in September, which reproduced on SiS but not
 --   on local Streamlit 1.50.
 
 
@@ -152,10 +172,10 @@ SELECT FULL_NAME, TIER, DESCRIBE_ERROR
 FROM GOVERNANCE.APPS.V_STREAMLIT_INVENTORY_LATEST
 WHERE DESCRIBE_ERROR IS NOT NULL;
 
--- Live result:
---   TRUAUDIENCE_IDENTITY_RESOLUTION_AND_ENRICHMENT.SHARE_SCHEMA.TAP_CONFIGURATION
+-- Example result from one account:
+--   <shared_db>.<share_schema>.<app>
 --   22000 / Listing trial time limit exceeded.
 --
--- A Streamlit app arriving via an expired listing trial. Not the headline
--- finding, but a useful illustration that the estate contains apps nobody on
--- the team provisioned or can currently open.
+-- A Streamlit app that arrived via an expired marketplace listing trial. Not the
+-- headline finding, but a useful illustration that the estate contains apps
+-- nobody on the team provisioned or can currently open.

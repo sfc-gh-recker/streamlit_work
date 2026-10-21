@@ -1,5 +1,5 @@
 # ============================================================================
-# DCM Project Manifest — Merch Performance Dashboard
+# DCM Project Manifest — Sales Performance Dashboard (reference app)
 # ============================================================================
 # This project deploys a Streamlit app AND the tables it reads AND the roles
 # and grants that govern it as a single versioned unit. That is the point:
@@ -27,8 +27,8 @@ default_target: dev
 # environments would make deploying PROD drop all the DEV objects.
 targets:
   dev:
-    account_identifier: MYORG-MYACCOUNT
-    project_name: GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_DEV
+    account_identifier: MYORG-MYACCOUNT        # <- set to your account
+    project_name: GOVERNANCE.PROJECTS.SALES_PERFORMANCE_DEV
     # Using ACCOUNTADMIN here only because this is a demo account where it is
     # the available role. For a real deployment this should be a dedicated
     # deployer role -- see the prod target below. Snowflake's own CI/CD guidance
@@ -37,14 +37,14 @@ targets:
     templating_config: DEV
 
   test:
-    account_identifier: MYORG-MYACCOUNT
-    project_name: GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_TEST
+    account_identifier: MYORG-MYACCOUNT        # <- set to your account
+    project_name: GOVERNANCE.PROJECTS.SALES_PERFORMANCE_TEST
     project_owner: ACCOUNTADMIN
     templating_config: TEST
 
   prod:
-    account_identifier: MYORG-MYACCOUNT
-    project_name: GOVERNANCE.PROJECTS.MERCH_PERFORMANCE_PROD
+    account_identifier: MYORG-MYACCOUNT        # <- set to your account
+    project_name: GOVERNANCE.PROJECTS.SALES_PERFORMANCE_PROD
     # This is the pattern to follow. A dedicated role, granted only to the CI/CD
     # service user and never to individual developers, with exactly the
     # privileges needed to deploy this project and no more. That is what stops
@@ -62,14 +62,14 @@ targets:
 # Both were tested. The rule that decides it: "the literal directory prefix
 # before the first wildcard is removed" when files are materialized.
 #
-#   'streamlit/merch_performance/utils/config.py'  (explicit, no wildcard)
+#   'streamlit/sales_performance/utils/config.py'  (explicit, no wildcard)
 #       -> materializes as  config.py         <-- utils/ package is FLATTENED
 #       -> `from utils.config import ...` then fails at runtime
 #
-#   'streamlit/merch_performance/utils/*.py'       (wildcard after utils/)
+#   'streamlit/sales_performance/utils/*.py'       (wildcard after utils/)
 #       -> also flattens, for the same reason
 #
-#   'streamlit/merch_performance/**/*'             (wildcard before utils/)
+#   'streamlit/sales_performance/**/*'             (wildcard before utils/)
 #       -> materializes as  utils/config.py   <-- structure PRESERVED
 #
 # So any app with a Python package subdirectory requires the ** form. Verify
@@ -88,8 +88,8 @@ targets:
 #   * clean before deploying:  find . -name __pycache__ -type d -exec rm -rf {} +
 #     (the CI workflow does this explicitly before plan/deploy)
 assets:
-  merch_performance:
-    path: 'streamlit/merch_performance/**/*'
+  sales_performance:
+    path: 'streamlit/sales_performance/**/*'
 
 # ----------------------------------------------------------------------------
 # Templating
@@ -97,10 +97,10 @@ assets:
 # IMPORTANT: these variables are available in the DEFINE statements ONLY. They
 # are NOT passed through to the Streamlit Python files. The app infers its own
 # environment at runtime via CURRENT_DATABASE() -- see
-# streamlit/merch_performance/utils/config.py for why that matters.
+# streamlit/sales_performance/utils/config.py for why that matters.
 templating:
   defaults:
-    warehouse: 'SNOW_INTELLIGENCE_DEMO_WH'
+    warehouse: 'ANALYTICS_WH'                   # <- set to your warehouse
 
   configurations:
     DEV:

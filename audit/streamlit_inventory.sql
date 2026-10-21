@@ -586,7 +586,7 @@ ORDER BY apps DESC;
 -- Suspended on creation by design. Resume once you have picked the warehouse
 -- and confirmed the audit role can see every database you care about.
 CREATE OR REPLACE TASK GOVERNANCE.APPS.TSK_AUDIT_STREAMLIT_APPS
-    WAREHOUSE = SNOW_INTELLIGENCE_DEMO_WH
+    WAREHOUSE = ANALYTICS_WH          -- <- set to a warehouse in your account
     SCHEDULE  = 'USING CRON 0 6 * * 1 America/Los_Angeles'
     COMMENT   = 'Weekly Streamlit sprawl audit, Mondays 06:00 PT'
 AS
