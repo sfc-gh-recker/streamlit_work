@@ -2,9 +2,11 @@
 
 ## Overview
 
-This documentation set defines how Streamlit apps are developed, governed, promoted, and retired on Snowflake. It is the Streamlit counterpart to the AI Strategy set, and follows the same structure: numbered documents, explicit privilege matrices, runnable DDL, and stated limitations.
+This documentation set defines how Streamlit apps are developed, governed, promoted, and retired on Snowflake. It is written to be handed to a team that has none of this in place and has to stand up a Streamlit practice from zero.
 
-Every limitation recorded here was verified empirically against a live Snowflake account in September 2026, not taken from documentation. Where a documented capability turned out not to work as expected, that is called out with what actually happened.
+Every limitation recorded here was verified empirically against a live Snowflake account, not taken from documentation. Where a documented capability turned out not to work as expected, that is called out with the actual error.
+
+**Start at [00 — Getting Started](00_getting_started.md)** for the ordered, executable setup sequence. The numbered documents after it explain why the practice is shaped the way it is, and are reference rather than reading order.
 
 ---
 
@@ -12,12 +14,25 @@ Every limitation recorded here was verified empirically against a live Snowflake
 
 | # | Document | Covers |
 |---|---|---|
+| 0 | [**Getting Started**](00_getting_started.md) | **Day-zero runbook: privileges, ordered setup steps, first-team onboarding** |
 | 1 | [Development Workflow Overview](01_dev_workflow_overview.md) | The problem, the provenance gate, the three-tier model, lifecycle |
 | 2 | [Git Strategy](02_git_strategy.md) | Git repositories, provenance, branching, CODEOWNERS, custom SQL |
 | 3 | [Promotion Pipeline](03_promotion_pipeline.md) | DCM Projects, `DEFINE STREAMLIT`, DEV/TEST/PROD, CI/CD, rollback |
 | 4 | [RBAC and Ownership](04_rbac_and_ownership.md) | Owner's rights, functional roles, the self-service grant set |
 | 5 | [App Governance and Registry](05_app_governance_registry.md) | Sanctioned vs side project, registry, certification, support boundary |
 | 6 | [Tooling and Runtimes](06_tooling_and_runtimes.md) | Workspaces, CLI, runtime choice, dependency pinning, observability |
+| 7 | [Migration Runbook](07_migration_runbook.md) | `ROOT_LOCATION` → `FROM`: the gating prerequisite, step by step, including bulk triage |
+| 8 | [Testing and Validation](08_testing_and_validation.md) | The six layers, from static checks to provenance assertions. Closes the "`PLAN` does not test that the app runs" gap |
+
+### Reading paths
+
+| You are | Read |
+|---|---|
+| Standing this up from scratch | 00, then 01, then 04 before creating anything |
+| Inheriting an existing estate | 00 §1 to measure, then 07 to triage, then 05 |
+| Building the CI/CD pipeline | 03, then 08, then 02 §7 |
+| Debugging a broken app | 08 §5, then 06 §3 |
+| Deciding whether to use Streamlit at all | 06 §9 |
 
 ---
 

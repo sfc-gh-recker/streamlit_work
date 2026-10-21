@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS GOVERNANCE.APPS.STREAMLIT_INVENTORY (
     COMMIT_SHA              VARCHAR,   -- effective commit from EITHER path
 
     -- source model / runtime
-    SOURCE_MODEL            VARCHAR,   -- FROM | ROOT_LOCATION (legacy) | UNKNOWN
+    SOURCE_MODEL            VARCHAR,   -- FROM | ROOT_LOCATION (legacy) | WORKSPACE | UNKNOWN
     ROOT_LOCATION           VARCHAR,
     RUNTIME                 VARCHAR,   -- WAREHOUSE | CONTAINER
     COMPUTE_POOL            VARCHAR,
@@ -482,9 +482,29 @@ BEGIN
                 :v_desc:main_file::VARCHAR                         AS main_file,
                 :v_desc:user_packages::VARCHAR                     AS user_packages,
                 CASE
-                    WHEN :v_desc IS NULL                                THEN 'UNKNOWN'
-                    WHEN :v_desc:root_location IS NOT NULL              THEN 'ROOT_LOCATION'
-                    WHEN :v_desc:live_version_location_uri IS NOT NULL  THEN 'FROM'
+                    WHEN :v_desc IS NULL                   THEN 'UNKNOWN'
+                    WHEN :v_desc:root_location IS NOT NULL THEN 'ROOT_LOCATION'
+                    -- Snowsight workspace preview apps. Created by "create app"
+                    -- from a workspace file; source_location reads
+                    -- snow://workspace/<db>.<schema>."<ws>"/versions/head/...
+                    -- Note "head": the app follows the workspace HEAD, so it is
+                    -- a MOVING POINTER and carries no commit. These are Tier 1
+                    -- Explore apps by construction -- useful to separate from
+                    -- legacy, because the remediation is completely different
+                    -- (promote to Git, not migrate a source model).
+                    WHEN :v_desc:source_location::VARCHAR
+                             LIKE 'snow://workspace/%'     THEN 'WORKSPACE'
+                    -- Detect the modern model by the EXISTENCE of the version
+                    -- columns, not by live_version_location_uri being set.
+                    -- That column stays empty until someone actually opens the
+                    -- app (a live version is created on first view), so keying
+                    -- on its value reports a brand-new Git-deployed app as
+                    -- UNKNOWN -- which then fails the legacy check and skews
+                    -- the migration worklist.
+                    WHEN :v_desc:default_version_name IS NOT NULL
+                      OR ARRAY_CONTAINS('live_version_location_uri'::VARIANT,
+                                        OBJECT_KEYS(:v_desc))
+                                                           THEN 'FROM'
                     ELSE 'UNKNOWN'
                 END                                                AS source_model,
                 CASE
@@ -529,6 +549,7 @@ SELECT
     COUNT_IF(IS_UNPINNED_SOURCE)                          AS governed_not_traceable,
     COUNT_IF(COMMIT_SHA IS NOT NULL)                      AS traceable_to_commit,
     COUNT_IF(IS_LEGACY_SOURCE)                            AS legacy_source_model,
+    COUNT_IF(SOURCE_MODEL = 'WORKSPACE')                  AS workspace_preview_apps,
     COUNT_IF(IS_ADMIN_OWNED)                              AS admin_owned,
     COUNT_IF(IS_UNNAMED)                                  AS never_named,
     COUNT_IF(IS_UNDOCUMENTED)                             AS undocumented,

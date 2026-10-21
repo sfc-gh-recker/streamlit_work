@@ -4,6 +4,33 @@ A reference workflow for developing, governing, and promoting Streamlit in Snowf
 
 General guidance for teams deploying and governing Streamlit in Snowflake at scale.
 
+## → Start here: [`streamlit_strategy_v1/`](streamlit_strategy_v1/README.md)
+
+**That directory is the guide.** It is the full end-to-end doc set for standing up
+a Streamlit practice from nothing, written to be handed to a team that has none
+of this in place. This README is the summary and the runnable code; the strategy
+set is the actual guidance.
+
+| # | Document | Covers |
+|---|---|---|
+| 0 | [**Getting Started**](streamlit_strategy_v1/00_getting_started.md) | **Day-zero runbook — privileges, ordered setup, first-team onboarding** |
+| 1 | [Development Workflow Overview](streamlit_strategy_v1/01_dev_workflow_overview.md) | The problem, the provenance gate, the three-tier model, lifecycle |
+| 2 | [Git Strategy](streamlit_strategy_v1/02_git_strategy.md) | Repositories, branching, CODEOWNERS, PR checks, secrets |
+| 3 | [Promotion Pipeline](streamlit_strategy_v1/03_promotion_pipeline.md) | DCM Projects, DEV/TEST/PROD, CI/CD, rollback |
+| 4 | [RBAC and Ownership](streamlit_strategy_v1/04_rbac_and_ownership.md) | Owner's rights, functional roles, the self-service unblock |
+| 5 | [App Governance and Registry](streamlit_strategy_v1/05_app_governance_registry.md) | Audit, registry, certification, support boundary |
+| 6 | [Tooling and Runtimes](streamlit_strategy_v1/06_tooling_and_runtimes.md) | Runtime choice, dependency pinning, session-state rules, observability |
+| 7 | [Migration Runbook](streamlit_strategy_v1/07_migration_runbook.md) | `ROOT_LOCATION` → `FROM`, the gating prerequisite, step by step |
+| 8 | [Testing and Validation](streamlit_strategy_v1/08_testing_and_validation.md) | Six layers, static checks through provenance assertions |
+
+Read [00](streamlit_strategy_v1/00_getting_started.md) first — it is the ordered,
+executable sequence. The rest is reference.
+
+There is also a single-page HTML field guide,
+[`streamlit-dev-management-guide.html`](streamlit-dev-management-guide.html), which
+covers the same ground in one scrollable document for people who will not read
+nine files.
+
 ---
 
 ## The problem
@@ -86,16 +113,32 @@ SELECT * FROM GOVERNANCE.APPS.V_STREAMLIT_REMEDIATION_QUEUE;
 
 ```
 .
+├── streamlit_strategy_v1/           ◀ THE GUIDE — start at 00
+│   ├── README.md                    Index and reading paths
+│   ├── 00_getting_started.md        Day-zero runbook
+│   ├── 01_dev_workflow_overview.md  Provenance gate, three-tier model
+│   ├── 02_git_strategy.md           Repos, branching, CODEOWNERS, PR checks
+│   ├── 03_promotion_pipeline.md     DCM, DEV/TEST/PROD, CI/CD, rollback
+│   ├── 04_rbac_and_ownership.md     Owner's rights, functional roles
+│   ├── 05_app_governance_registry.md  Audit, registry, certification
+│   ├── 06_tooling_and_runtimes.md   Runtimes, pinning, session state
+│   ├── 07_migration_runbook.md      ROOT_LOCATION → FROM
+│   └── 08_testing_and_validation.md Six testing layers
+├── streamlit-dev-management-guide.html   Same ground, one scrollable page
+│
 ├── audit/
-│   └── streamlit_inventory.sql      Inventory procedure, reporting views, weekly task
-├── brief/
-│   ├── streamlit_workflow_brief.md  Session one-pager
-│   ├── lifecycle_flow.drawio        Editable diagram
-│   └── lifecycle_flow.svg           Rendered diagram
+│   └── streamlit_inventory.sql      Inventory procedure, 4 views, weekly task
+├── catalog/
+│   ├── registry.sql                 App registry, tags, certification, 5 views
+│   └── catalog_app/                 Curated app portal (Browse + Operations)
+│       ├── streamlit_app.py
+│       ├── requirements.txt
+│       └── snowflake.yml
 ├── demo/
-│   └── 01_provenance_proof.sql      60-second read-only proof
+│   ├── 01_provenance_proof.sql      Read-only 5-beat proof
+│   └── 02_git_roundtrip.sql         Live 8-beat Git round trip
 ├── demo_app/                        DCM project: app + data + access as one unit
-│   ├── manifest.yml
+│   ├── manifest.yml                 Targets, templating configs
 │   ├── sources/definitions/
 │   │   ├── pipeline.sql             Tables and serving view
 │   │   ├── access.sql               Functional owner, viewer, developer roles
@@ -108,6 +151,10 @@ SELECT * FROM GOVERNANCE.APPS.V_STREAMLIT_REMEDIATION_QUEUE;
 │       └── utils/
 │           ├── config.py            Runtime environment inference
 │           └── data.py              Parameterized queries
+├── brief/
+│   ├── streamlit_workflow_brief.md  One-pager for a working session
+│   ├── lifecycle_flow.drawio        Editable diagram
+│   └── lifecycle_flow.svg           Rendered diagram
 └── .github/workflows/deploy.yml     PR plan, main deploy, provenance verification
 ```
 

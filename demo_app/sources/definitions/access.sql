@@ -42,6 +42,20 @@ GRANT USAGE ON WAREHOUSE {{ warehouse }}
 -- then fails to start.
 GRANT USAGE ON COMPUTE POOL SYSTEM_COMPUTE_POOL_CPU
     TO ROLE APP_RETAIL_OWNER{{ env_suffix }};
+-- CREATE STREAMLIT is what makes this role usable as the DEPLOYING role, and it
+-- is easy to leave out because the app runs fine without it.
+--
+-- It matters because Streamlit ownership CANNOT BE TRANSFERRED: the role that
+-- executes CREATE STREAMLIT owns the app permanently. So if this role cannot
+-- create the app, the app can never be owned by it, and it will stay owned by
+-- whatever admin role deployed the project -- which hands admin reach to every
+-- viewer under owner's rights.
+--
+-- Without this grant the certification procedure correctly refuses the app:
+--   "NOT CERTIFIED: owned by an admin role -- viewers would inherit admin
+--    rights. Ownership cannot be transferred; recreate under a functional role"
+GRANT CREATE STREAMLIT ON SCHEMA RETAIL_DEMO{{ env_suffix }}.SERVE
+    TO ROLE APP_RETAIL_OWNER{{ env_suffix }};
 
 
 -- ----------------------------------------------------------------------------
