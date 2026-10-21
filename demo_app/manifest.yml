@@ -10,6 +10,11 @@
 #   snow dcm create --target dev          # once, creates the project object
 #   snow dcm plan   --target dev --save-output
 #   snow dcm deploy --target dev
+#
+# The account_identifier and warehouse values below are PLACEHOLDERS. Set them
+# before first use. The CI workflow depends on them too -- see the activation
+# checklist in the header of .github/workflows/deploy.yml, which also lists the
+# repository secrets and the deployer role that must exist first.
 # ============================================================================
 
 manifest_version: 2
