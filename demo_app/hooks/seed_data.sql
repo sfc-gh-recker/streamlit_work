@@ -16,15 +16,23 @@
 -- repo. The data is fully synthetic.
 --
 -- HOW TO RUN
---   Snowflake CLI (Jinja templating must be enabled explicitly):
+--   Snowflake CLI (Jinja templating must be enabled explicitly). Note the
+--   value is NOT quoted: env_suffix is spliced into an identifier, so
+--   "env_suffix='_DEV'" would render RETAIL_DEMO'_DEV' and fail to compile.
 --     snow sql -f demo_app/hooks/seed_data.sql \
---       --variable "env_suffix='_DEV'" --enable-templating JINJA
+--       --variable "env_suffix=_DEV" --enable-templating JINJA
+--
+--   For the PROD target the suffix is empty, which needs an explicit empty
+--   value rather than omitting the flag:
+--     snow sql -f demo_app/hooks/seed_data.sql \
+--       --variable "env_suffix=" --enable-templating JINJA
 --
 --   SQL, from a stage or Git repository clone:
 --     EXECUTE IMMEDIATE FROM '@<repo>/branches/main/demo_app/hooks/seed_data.sql'
 --       USING (env_suffix => '_DEV');
 --
 -- Idempotent: truncates before inserting, so re-running does not duplicate.
+-- Loads roughly 8k rows spanning two years.
 -- ============================================================================
 
 TRUNCATE TABLE IF EXISTS RETAIL_DEMO{{ env_suffix }}.CORE.SKU_DAILY_SALES;

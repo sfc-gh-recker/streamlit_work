@@ -100,6 +100,8 @@ SELECT * FROM GOVERNANCE.APPS.V_STREAMLIT_REMEDIATION_QUEUE;
 │   │   ├── pipeline.sql             Tables and serving view
 │   │   ├── access.sql               Functional owner, viewer, developer roles
 │   │   └── dashboard.sql            DEFINE STREAMLIT
+│   ├── hooks/
+│   │   └── seed_data.sql            Synthetic data (post-deploy; DCM is declarative)
 │   └── streamlit/sales_performance/
 │       ├── streamlit_app.py         Reference app (correct session-state patterns)
 │       ├── requirements.txt         Exact pins
@@ -121,10 +123,18 @@ snow sql -q "SELECT * FROM GOVERNANCE.APPS.V_STREAMLIT_SPRAWL_SUMMARY"
 snow sql -q "SELECT * FROM GOVERNANCE.APPS.V_STREAMLIT_REMEDIATION_QUEUE LIMIT 20"
 
 # 3. Deploy the reference app
+#    Set account_identifier and warehouse in demo_app/manifest.yml first --
+#    it ships MYORG-MYACCOUNT and ANALYTICS_WH placeholders.
 cd demo_app
 snow dcm create --target dev
 snow dcm plan   --target dev --save-output
 snow dcm deploy --target dev
+
+# 4. Seed the demo data. DCM is declarative and has no DEFINE for table
+#    contents, so this is a post-deploy hook. Without it the app deploys
+#    fine and renders an empty dashboard.
+#    The suffix is spliced into an identifier, so do NOT quote the value.
+snow sql -f hooks/seed_data.sql --variable "env_suffix=_DEV" --enable-templating JINJA
 ```
 
 ## Gotchas this repo encodes
@@ -140,6 +150,9 @@ Each of these was hit and verified while building it, not taken from documentati
 | DCM Jinja variables do not reach Streamlit Python files | Hardcoding a database name ships a PROD app reading DEV data, silently. Use `CURRENT_DATABASE()`. |
 | An explicit asset path flattens directories | `utils/config.py` materializes as `config.py` and imports break. Only a `**` glob preserves package structure. |
 | A `**` glob sweeps in `__pycache__` | Globs have no negation, so clean bytecode before deploying. |
+| DCM cannot rename or insert a column mid-list | It deploys tables via `CREATE OR ALTER TABLE`, which fails with *Unsupported feature 'CREATE OR ALTER TABLE column add before end of column list'*. Views are stricter still: *Cannot reorder VIEW columns in ALTER*. Rename the column out-of-band with `ALTER TABLE … RENAME COLUMN` and let DCM reconcile, or `PURGE` and rebuild. |
+| Deployment aliases must be unique per project | Re-running a failed `DEPLOY AS "x"` returns *There is already a version exists with alias x*, so a retry needs a new alias. |
+| `snow sql --variable` does not strip quotes | `--variable "env_suffix='_DEV'"` renders `RETAIL_DEMO'_DEV'` and fails to compile. Pass identifier fragments unquoted. |
 | `DEFINE STREAMLIT` defaults to the **container** runtime | A shipped `environment.yml` is silently ignored. Use `requirements.txt`, and declare the runtime explicitly. |
 | `user_packages` is empty for container-runtime apps | It cannot verify your pins. Report `st.__version__` from inside the app instead. |
 | No `ACCOUNT_USAGE.STREAMLITS` view exists | An inventory must loop `SHOW` + `DESCRIBE` into a table. |
