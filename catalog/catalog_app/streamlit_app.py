@@ -130,6 +130,20 @@ with tab_browse:
                                 app["APP_URL"],
                                 use_container_width=True,
                             )
+                        elif app["URL_ID"]:
+                            # No explicit APP_URL in the registry. Show the
+                            # url_id the audit read off the object so the app is
+                            # still findable, rather than rendering nothing.
+                            #
+                            # A full Snowsight link is deliberately not built
+                            # here: it needs the account's Snowsight host, which
+                            # varies by org and region, so constructing one in
+                            # the app would produce a dead link on some
+                            # accounts. Set APP_URL in the registry to get a
+                            # real button.
+                            st.caption(f"App id: `{app['URL_ID']}`")
+                        else:
+                            st.caption(":orange[No link recorded]")
 
                         with st.expander("Details"):
                             st.markdown(

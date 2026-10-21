@@ -181,11 +181,16 @@ SELECT
     r.DATA_CLASSIFICATION,
     r.VIEWER_ROLE,
     r.APP_URL,
+    -- The audit records url_id from DESCRIBE STREAMLIT. Exposed here so the
+    -- portal can build a link without anyone pasting one into the registry by
+    -- hand -- a manual APP_URL rots the moment an app is recreated. APP_URL
+    -- stays available as an explicit override (e.g. a vanity or proxy link).
+    i.URL_ID,
     r.ICON,
     r.LAST_REVIEWED,
     i.PROVENANCE,
     i.RUNTIME,
-    COALESCE(LEFT(i.GIT_COMMIT_HASH, 12), i.DCM_PROJECT) AS provenance_detail
+    COALESCE(LEFT(i.COMMIT_SHA, 12), i.DCM_PROJECT) AS provenance_detail
 FROM GOVERNANCE.APPS.APP_REGISTRY r
 JOIN GOVERNANCE.APPS.V_STREAMLIT_INVENTORY_LATEST i
   ON i.FULL_NAME = r.FULL_NAME
