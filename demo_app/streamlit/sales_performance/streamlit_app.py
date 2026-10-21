@@ -63,7 +63,7 @@ min_date, max_date = load_date_bounds(serve_view)
 # A single dict is the authoritative default set. There is exactly one of
 # these; a second, disagreeing copy elsewhere in the file is its own bug class.
 FILTER_DEFAULTS = {
-    "flt_leagues": [],
+    "flt_product_lines": [],
     "flt_channels": [],
     "flt_dates": (min_date, max_date),
     "flt_exclude_returns": False,
@@ -99,10 +99,10 @@ with st.sidebar:
     # RULE 2 — keyed widgets take no default= / value= / index=
     # -----------------------------------------------------------------------
     st.multiselect(
-        "League",
-        options=domain["leagues"],
-        key="flt_leagues",
-        placeholder="All leagues",
+        "Product line",
+        options=domain["product_lines"],
+        key="flt_product_lines",
+        placeholder="All product lines",
     )
     st.multiselect(
         "Channel",
@@ -143,7 +143,7 @@ with st.sidebar:
 # Reading the single source of truth keeps behaviour identical whether the run
 # was triggered by a widget, a callback, or an unrelated rerun.
 # ---------------------------------------------------------------------------
-sel_leagues = st.session_state["flt_leagues"]
+sel_product_lines = st.session_state["flt_product_lines"]
 sel_channels = st.session_state["flt_channels"]
 date_range = st.session_state["flt_dates"]
 exclude_returns = st.session_state["flt_exclude_returns"]
@@ -159,8 +159,8 @@ df = load_performance(serve_view, start_date, end_date)
 
 # Empty selection means "all" -- more intuitive than forcing users to tick
 # every box, and it keeps the query simpler than a dynamic IN list.
-if sel_leagues:
-    df = df[df["LEAGUE"].isin(sel_leagues)]
+if sel_product_lines:
+    df = df[df["PRODUCT_LINE"].isin(sel_product_lines)]
 if sel_channels:
     df = df[df["CHANNEL"].isin(sel_channels)]
 
@@ -206,20 +206,20 @@ with left:
     )
 
 with right:
-    st.subheader("By league")
-    by_league = (
-        df.groupby("LEAGUE", as_index=False)[revenue_col]
+    st.subheader("By product line")
+    by_product_line = (
+        df.groupby("PRODUCT_LINE", as_index=False)[revenue_col]
         .sum()
         .sort_values(revenue_col, ascending=False)
     )
     st.plotly_chart(
-        px.bar(by_league, x="LEAGUE", y=revenue_col),
+        px.bar(by_product_line, x="PRODUCT_LINE", y=revenue_col),
         use_container_width=True,
     )
 
 st.subheader("Channel detail")
 by_channel = (
-    df.groupby(["CHANNEL", "LEAGUE"], as_index=False)
+    df.groupby(["CHANNEL", "PRODUCT_LINE"], as_index=False)
     .agg({revenue_col: "sum", "UNITS_SOLD": "sum"})
     .sort_values(revenue_col, ascending=False)
 )

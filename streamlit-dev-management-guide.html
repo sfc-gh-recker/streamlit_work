@@ -562,13 +562,13 @@ DATABASE = <span class="bad">"RETAIL_DEMO_DEV"</span></code></pre>
 </p>
 
 <h4>Rule 1 — seed defaults once, before any widget</h4>
-<pre><code>FILTER_DEFAULTS = {<span class="str">"flt_leagues"</span>: [], <span class="str">"flt_channels"</span>: []}
+<pre><code>FILTER_DEFAULTS = {<span class="str">"flt_product_lines"</span>: [], <span class="str">"flt_channels"</span>: []}
 <span class="kw">for</span> key, default <span class="kw">in</span> FILTER_DEFAULTS.items():
     st.session_state.setdefault(key, <span class="kw">list</span>(default) <span class="kw">if isinstance</span>(default, <span class="kw">list</span>) <span class="kw">else</span> default)</code></pre>
 
 <h4>Rule 2 — a keyed widget passes no <code>index=</code> / <code>value=</code> / <code>default=</code></h4>
-<pre><code>st.multiselect(<span class="str">"League"</span>, options=leagues, key=<span class="str">"flt_leagues"</span>)                  <span class="cmt"># correct</span>
-st.multiselect(<span class="str">"League"</span>, options=leagues, <span class="bad">default=[]</span>, key=<span class="str">"flt_leagues"</span>)     <span class="cmt"># wrong</span></code></pre>
+<pre><code>st.multiselect(<span class="str">"Product line"</span>, options=lines, key=<span class="str">"flt_product_lines"</span>)                  <span class="cmt"># correct</span>
+st.multiselect(<span class="str">"Product line"</span>, options=lines, <span class="bad">default=[]</span>, key=<span class="str">"flt_product_lines"</span>)     <span class="cmt"># wrong</span></code></pre>
 <p>With a <code>key</code>, <code>session_state</code> is the source of truth and the literal is only an initial default. Supplying both makes them compete.</p>
 
 <h4>Rule 3 — resets are <code>on_click</code> callbacks, never "pending flag + <code>st.rerun()</code>"</h4>

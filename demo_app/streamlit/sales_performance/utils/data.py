@@ -32,8 +32,8 @@ def load_performance(serve_view: str, start_date, end_date) -> pd.DataFrame:
         f"""
         SELECT
             SALE_DATE,
-            LEAGUE,
-            TEAM,
+            PRODUCT_LINE,
+            REGION,
             CHANNEL,
             SUM(UNITS_SOLD)                                  AS UNITS_SOLD,
             SUM(GROSS_REVENUE)                               AS GROSS_REVENUE,
@@ -45,7 +45,7 @@ def load_performance(serve_view: str, start_date, end_date) -> pd.DataFrame:
                 0)                                           AS RETURN_RATE
         FROM {serve_view}
         WHERE SALE_DATE BETWEEN :1 AND :2
-        GROUP BY SALE_DATE, LEAGUE, TEAM, CHANNEL
+        GROUP BY SALE_DATE, PRODUCT_LINE, REGION, CHANNEL
         ORDER BY SALE_DATE
         """,
         params=[start_date, end_date],
@@ -58,18 +58,18 @@ def load_filter_domain(serve_view: str) -> dict:
     """
     Distinct values for the filter widgets.
 
-    Cached for an hour: the domain of leagues and channels changes far less
+    Cached for an hour: the domain of product lines and channels changes far less
     often than the measures, so re-reading it on every interaction is wasted
     warehouse time.
     """
     conn = st.connection("snowflake")
-    leagues = conn.query(
-        f"SELECT DISTINCT LEAGUE FROM {serve_view} ORDER BY LEAGUE", ttl=3600
-    )["LEAGUE"].dropna().tolist()
+    product_lines = conn.query(
+        f"SELECT DISTINCT PRODUCT_LINE FROM {serve_view} ORDER BY PRODUCT_LINE", ttl=3600
+    )["PRODUCT_LINE"].dropna().tolist()
     channels = conn.query(
         f"SELECT DISTINCT CHANNEL FROM {serve_view} ORDER BY CHANNEL", ttl=3600
     )["CHANNEL"].dropna().tolist()
-    return {"leagues": leagues, "channels": channels}
+    return {"product_lines": product_lines, "channels": channels}
 
 
 @st.cache_data(ttl=600)

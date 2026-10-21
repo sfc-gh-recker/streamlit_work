@@ -115,7 +115,7 @@ These come from the September filter-state investigation, where a deselected fil
 **Rule 1 — seed defaults once, before any widget.**
 
 ```python
-FILTER_DEFAULTS = {"flt_leagues": [], "flt_channels": []}
+FILTER_DEFAULTS = {"flt_product_lines": [], "flt_channels": []}
 for key, default in FILTER_DEFAULTS.items():
     st.session_state.setdefault(
         key, list(default) if isinstance(default, list) else default
@@ -127,8 +127,8 @@ One authoritative dict. A second, disagreeing copy elsewhere is its own bug clas
 **Rule 2 — a keyed widget passes no `index=` / `value=` / `default=`.**
 
 ```python
-st.multiselect("League", options=leagues, key="flt_leagues")     # correct
-st.multiselect("League", options=leagues, default=[], key="flt_leagues")  # wrong
+st.multiselect("Product line", options=lines, key="flt_product_lines")     # correct
+st.multiselect("Product line", options=lines, default=[], key="flt_product_lines")  # wrong
 ```
 
 With a `key`, `session_state` is the source of truth and the literal is only an initial default. Supplying both makes them compete.

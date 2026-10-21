@@ -19,14 +19,14 @@ DEFINE SCHEMA RETAIL_DEMO{{ env_suffix }}.SERVE
 -- ----------------------------------------------------------------------------
 -- Base table
 -- ----------------------------------------------------------------------------
--- Synthetic data. Grain: one row per SKU per league per day.
+-- Synthetic data. Grain: one row per SKU per region per day.
 DEFINE TABLE RETAIL_DEMO{{ env_suffix }}.CORE.SKU_DAILY_SALES (
     SALE_DATE       DATE            COMMENT 'Date of sale',
     SKU             VARCHAR         COMMENT 'Stock keeping unit identifier',
     PRODUCT_NAME    VARCHAR         COMMENT 'Human readable product name',
-    LEAGUE          VARCHAR         COMMENT 'NFL, NBA, MLB, NHL, NCAA',
-    TEAM            VARCHAR         COMMENT 'Team the product is associated with',
-    CHANNEL         VARCHAR         COMMENT 'ECOM, RETAIL, WHOLESALE, STADIUM',
+    PRODUCT_LINE    VARCHAR         COMMENT 'Apparel, Footwear, Accessories, Equipment, Outerwear',
+    REGION          VARCHAR         COMMENT 'Sales region the row is attributed to',
+    CHANNEL         VARCHAR         COMMENT 'ECOM, RETAIL, WHOLESALE, PARTNER',
     UNITS_SOLD      NUMBER(38,0)    COMMENT 'Units sold on this date',
     GROSS_REVENUE   NUMBER(38,2)    COMMENT 'Gross revenue in USD',
     RETURNS_UNITS   NUMBER(38,0)    COMMENT 'Units returned against this SKU/date'
@@ -46,8 +46,8 @@ COMMENT = 'Daily SKU-level sales. Synthetic data for demonstration.';
 -- work is templating a database name into the Python -- see utils/config.py.
 DEFINE VIEW RETAIL_DEMO{{ env_suffix }}.SERVE.V_SALES_PERFORMANCE (
     SALE_DATE       COMMENT 'Date of sale',
-    LEAGUE          COMMENT 'League',
-    TEAM            COMMENT 'Team',
+    PRODUCT_LINE    COMMENT 'Product line',
+    REGION          COMMENT 'Sales region',
     CHANNEL         COMMENT 'Sales channel',
     PRODUCT_NAME    COMMENT 'Product name',
     UNITS_SOLD      COMMENT 'Units sold',
@@ -58,8 +58,8 @@ DEFINE VIEW RETAIL_DEMO{{ env_suffix }}.SERVE.V_SALES_PERFORMANCE (
 AS
 SELECT
     SALE_DATE,
-    LEAGUE,
-    TEAM,
+    PRODUCT_LINE,
+    REGION,
     CHANNEL,
     PRODUCT_NAME,
     UNITS_SOLD,
