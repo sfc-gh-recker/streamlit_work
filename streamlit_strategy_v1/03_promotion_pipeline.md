@@ -222,7 +222,7 @@ Resolving a tag back to its commit:
 ```sql
 SHOW GIT TAGS LIKE 'v0.1.0' IN GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO;
 -- name    path           commit_hash
--- v0.1.0  /tags/v0.1.0   1628c7bfca13f970aca0c9e53de3a50070de6ee3
+-- v0.1.0  /tags/v0.1.0   f357138de015020cf1724d7d3b899dccfea24932
 ```
 
 Resolve it live rather than treating the tag name as the identifier: a tag can be

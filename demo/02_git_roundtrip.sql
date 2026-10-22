@@ -58,8 +58,8 @@ SHOW GIT BRANCHES IN GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO;
 SHOW GIT TAGS     IN GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO;
 
 -- Live result:
---   main   | /branches/main | 1628c7bfca13f970aca0c9e53de3a50070de6ee3
---   v0.1.0 | /tags/v0.1.0   | 1628c7bfca13f970aca0c9e53de3a50070de6ee3
+--   main   | /branches/main | f357138de015020cf1724d7d3b899dccfea24932
+--   v0.1.0 | /tags/v0.1.0   | f357138de015020cf1724d7d3b899dccfea24932
 --
 -- The tag and the branch head agree, because the tag was cut from this commit.
 -- SHOW GIT TAGS resolving a tag to a SHA is what makes tag-based deployment
@@ -133,8 +133,8 @@ SHOW DEPLOYMENTS IN DCM PROJECT GOVERNANCE.PROJECTS.SALES_PERFORMANCE_DEV;
 -- it is a ladder of provenance quality:
 --
 --   $6 release-v0.1.0                @...REPO/tags/v0.1.0/demo_app/
---   $5 git-1628c7b-provenance-footer @...REPO/commits/1628c7bf…/demo_app/
---   $4 git-d2915be-pinned-commit-path @...REPO/commits/d2915be1…/demo_app/
+--   $5 git-f357138-provenance-footer @...REPO/commits/f357138d…/demo_app/
+--   $4 git-6972521-pinned-commit-path @...REPO/commits/6972521c…/demo_app/
 --   $3 (no alias)                    @...REPO/branches/main/demo_app/
 --   $2 container-runtime-fix         @...DCM_…_TMP_STAGE
 --   $1 initial-f3641ef               @...DCM_…_TMP_STAGE
@@ -171,7 +171,7 @@ ALTER STREAMLIT GOVERNANCE.APPS.SALES_PERFORMANCE_GITDIRECT
 -- Also rejected, at any depth, including the bare commit root.
 ALTER STREAMLIT GOVERNANCE.APPS.SALES_PERFORMANCE_GITDIRECT
     ADD VERSION "by_commit"
-    FROM '@GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO/commits/1628c7bfca13f970aca0c9e53de3a50070de6ee3/demo_app/streamlit/sales_performance/';
+    FROM '@GOVERNANCE.PROJECTS.STREAMLIT_WORK_REPO/commits/f357138de015020cf1724d7d3b899dccfea24932/demo_app/streamlit/sales_performance/';
 
 -- Accepted. Only branches/ works for the Streamlit commands.
 ALTER STREAMLIT GOVERNANCE.APPS.SALES_PERFORMANCE_GITDIRECT
@@ -197,9 +197,9 @@ ALTER STREAMLIT GOVERNANCE.APPS.SALES_PERFORMANCE_GITDIRECT
 SHOW VERSIONS IN STREAMLIT GOVERNANCE.APPS.SALES_PERFORMANCE_GITDIRECT;
 
 -- Live result:
---   VERSION$3 | provenance_footer | is_default | 1628c7bfca13f970aca0c9e53de3a50070de6ee3
---   VERSION$2 | v_branch_test     |            | 1628c7bfca13f970aca0c9e53de3a50070de6ee3
---   VERSION$1 |                   |            | d2915be1f45bb9fabc419011f71369861d833122
+--   VERSION$3 | provenance_footer | is_default | f357138de015020cf1724d7d3b899dccfea24932
+--   VERSION$2 | v_branch_test     |            | f357138de015020cf1724d7d3b899dccfea24932
+--   VERSION$1 |                   |            | 6972521cd1db495d587a4bb8644d502a6cc6310c
 --
 -- Every version carries the commit it was built from. Three points to make:
 --
@@ -233,9 +233,9 @@ WHERE PROVENANCE <> 'NONE'
 ORDER BY PROVENANCE, APP_NAME;
 
 -- Live result:
---   SALES_PERFORMANCE           | DCM_MANAGED | TAG | 1628c7bfca13 | FALSE | CERTIFIED
+--   SALES_PERFORMANCE           | DCM_MANAGED | TAG | f357138de015 | FALSE | CERTIFIED
 --   <a pre-existing git app>    | GIT_DIRECT  | -   | 15e3e34e80cd | FALSE | CERTIFIED
---   SALES_PERFORMANCE_GITDIRECT | GIT_DIRECT  | -   | 1628c7bfca13 | FALSE | CERTIFIED
+--   SALES_PERFORMANCE_GITDIRECT | GIT_DIRECT  | -   | f357138de015 | FALSE | CERTIFIED
 --
 -- The two apps built from this repository report the SAME commit by two
 -- completely different mechanisms:
