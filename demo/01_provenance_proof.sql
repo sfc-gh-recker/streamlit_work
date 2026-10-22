@@ -8,7 +8,7 @@
 -- Everything here is READ-ONLY. It works under a restricted session scope and
 -- needs no repository, no integration, and no deployment. Use this as the
 -- opening beat of the session, and as the fallback if the live end-to-end
--- deployment (demo/02_git_deploy.sh) cannot be run.
+-- deployment (demo/02_git_roundtrip.sql) cannot be run.
 --
 -- The outputs below are an example from one account. Your own object names
 -- and counts will differ; beat 1 shows how to find the equivalent app in your
@@ -90,7 +90,7 @@ DESCRIBE STREAMLIT <db>.<schema>.<app>;        -- <- paste a FULL_NAME from abov
 -- Requires audit/streamlit_inventory.sql to have been deployed and run.
 SELECT
     TOTAL_APPS              AS "Apps",
-    NO_GIT_PROVENANCE       AS "No provenance",
+    NO_PROVENANCE           AS "No provenance",
     PCT_UNGOVERNED          AS "% ungoverned",
     LEGACY_SOURCE_MODEL     AS "Legacy source model",
     ADMIN_OWNED             AS "Admin-owned",
