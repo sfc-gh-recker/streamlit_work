@@ -519,7 +519,7 @@ DATABASE = <span class="bad">"RETAIL_DEMO_DEV"</span></code></pre>
 <div class="box danger">
   <div class="box-title">Pin exact versions. Never ranges.</div>
   Range pins such as <code>streamlit&gt;=1.39.0</code> do <strong>not</strong> reliably take effect
-  on the warehouse runtime (see https://docs.snowflake.com/en/developer-guide/streamlit/app-development/dependency-management). The app runs on whatever the runtime picks, and that can
+  on the warehouse runtime (see <a href="https://docs.snowflake.com/en/developer-guide/streamlit/app-development/dependency-management">Manage dependencies for your Streamlit app</a>). The app runs on whatever the runtime picks, and that can
   change with no code edit and no deployment. <strong>Every app in the sampled estate had no exact pin.</strong>
   This is not hypothetical — the filter-state bug investigated in September reproduced on deployed
   SiS but not on local Streamlit 1.50, because the deployed version was not what the developer
